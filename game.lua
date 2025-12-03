@@ -6,31 +6,80 @@
 -- version: 0.1
 -- script:  lua
 
+-- Game constants
+SCREEN_WIDTH = 240
+SCREEN_HEIGHT = 136
+
+-- Colors
+COLOR_BLACK = 0
+COLOR_LIGHT_GREY = 13
+COLOR_DARK_GREY = 14
+COLOR_GREEN = 6
+COLOR_NPC = 8
+
 -- Game state
 STATE_MENU = 0
 STATE_GAME = 1
 STATE_DIALOG = 2
+
+-- Player constants
+PLAYER_WIDTH = 8
+PLAYER_HEIGHT = 8
+PLAYER_START_X = 120
+PLAYER_START_Y = 128
+
+-- Ground constants
+GROUND_X = 0
+GROUND_Y = 136
+GROUND_W = 240
+GROUND_H = 8
+
+-- Physics constants
+GRAVITY = 0.5
+JUMP_POWER = -5
+MOVE_SPEED = 1.5
+MAX_JUMPS = 2
+
+-- Global variables (initialized)
 gameState = STATE_MENU
+currentScreen = 1
+dialog_text = ""
+
+-- Player properties
+player = {
+  x = PLAYER_START_X,
+  y = PLAYER_START_Y,
+  w = PLAYER_WIDTH,
+  h = PLAYER_HEIGHT,
+  vx = 0,
+  vy = 0,
+  jumps = 0
+}
+
+-- Ground properties
+ground = {
+  x = GROUND_X,
+  y = GROUND_Y,
+  w = GROUND_W,
+  h = GROUND_H
+}
 
 -- Menu properties
 menuItems = {"Play", "Exit"}
 selectedMenuItem = 1
 
--- NPC properties
-dialog_text = ""
-
 function draw_top_bar(title)
-  rect(0, 0, 240, 10, 0)
-  print(title, 3, 2, 13)
+  rect(0, 0, SCREEN_WIDTH, 10, COLOR_BLACK)
+  print(title, 3, 2, COLOR_LIGHT_GREY)
 end
 
 function draw_menu()
-  cls(13)
+  cls(COLOR_LIGHT_GREY)
   draw_top_bar("Main Menu")
   for i, item in ipairs(menuItems) do
-    local color = 14
+    local color = COLOR_DARK_GREY
     if i == selectedMenuItem then
-      color = 6
+      color = COLOR_GREEN
     end
     print(item, 108, 70 + (i-1)*10, color)
   end
@@ -52,8 +101,8 @@ function update_menu()
   if btnp(4) or btnp(5) then -- A or B button
     if selectedMenuItem == 1 then -- Play
       -- Reset player state and screen for a new game
-      player.x = 120
-      player.y = 128
+      player.x = PLAYER_START_X
+      player.y = PLAYER_START_Y
       player.vx = 0
       player.vy = 0
       player.jumps = 0
@@ -105,45 +154,18 @@ screens = {
   }
 }
 
-currentScreen = 1
-
--- Player properties
-player = {
-  x = 120,
-  y = 128,
-  w = 8,
-  h = 8,
-  vx = 0,
-  vy = 0,
-  jumps = 0
-}
-
--- Ground properties
-ground = {
-  x = 0,
-  y = 136,
-  w = 240,
-  h = 8
-}
-
--- Game constants
-gravity = 0.5
-jump_power = -5
-move_speed = 1.5
-max_jumps = 2
-
 function game_update()
   -- Handle input
   if btn(2) then
-    player.vx = -move_speed
+    player.vx = -MOVE_SPEED
   elseif btn(3) then
-    player.vx = move_speed
+    player.vx = MOVE_SPEED
   else
     player.vx = 0
   end
 
-  if btnp(4) and player.jumps < max_jumps then
-    player.vy = jump_power
+  if btnp(4) and player.jumps < MAX_JUMPS then
+    player.vy = JUMP_POWER
     player.jumps = player.jumps + 1
   end
 
@@ -152,24 +174,24 @@ function game_update()
   player.y = player.y + player.vy
 
   -- Screen transition
-  if player.x > 240 - player.w then
+  if player.x > SCREEN_WIDTH - player.w then
     if currentScreen < #screens then
       currentScreen = currentScreen + 1
       player.x = 0
     else
-      player.x = 240 - player.w
+      player.x = SCREEN_WIDTH - player.w
     end
   elseif player.x < 0 then
     if currentScreen > 1 then
       currentScreen = currentScreen - 1
-      player.x = 240 - player.w
+      player.x = SCREEN_WIDTH - player.w
     else
       player.x = 0
     end
   end
 
   -- Apply gravity
-  player.vy = player.vy + gravity
+  player.vy = player.vy + GRAVITY
 
   local currentScreenData = screens[currentScreen]
   local currentPlatforms = currentScreenData.platforms
@@ -200,147 +222,31 @@ function game_update()
   end
 
   -- Clear screen
-  cls(13)
+  cls(COLOR_LIGHT_GREY)
 
   draw_top_bar(currentScreenData.name)
 
   -- Draw platforms
   for i, p in ipairs(currentPlatforms) do
-    rect(p.x, p.y, p.w, p.h, 14)
+    rect(p.x, p.y, p.w, p.h, COLOR_DARK_GREY)
   end
   
   -- Draw NPCs
   for i, npc in ipairs(currentScreenData.npcs) do
-    rect(npc.x, npc.y, 8, 8, 8)
+    rect(npc.x, npc.y, PLAYER_WIDTH, PLAYER_HEIGHT, COLOR_NPC)
   end
 
   -- Draw ground
-  rect(ground.x, ground.y, ground.w, ground.h, 14)
+  rect(ground.x, ground.y, ground.w, ground.h, COLOR_DARK_GREY)
 
   -- Draw player
-  rect(player.x, player.y, player.w, player.h, 6)
-end
-
-currentScreen = 1
-
--- Player properties
-player = {
-  x = 120,
-  y = 128,
-  w = 8,
-  h = 8,
-  vx = 0,
-  vy = 0,
-  jumps = 0
-}
-
--- Ground properties
-ground = {
-  x = 0,
-  y = 136,
-  w = 240,
-  h = 8
-}
-
--- Game constants
-gravity = 0.5
-jump_power = -5
-move_speed = 1.5
-max_jumps = 2
-
-function game_update()
-  -- Handle input
-  if btn(2) then
-    player.vx = -move_speed
-  elseif btn(3) then
-    player.vx = move_speed
-  else
-    player.vx = 0
-  end
-
-  if btnp(4) and player.jumps < max_jumps then
-    player.vy = jump_power
-    player.jumps = player.jumps + 1
-  end
-
-  -- Update player position
-  player.x = player.x + player.vx
-  player.y = player.y + player.vy
-
-  -- Screen transition
-  if player.x > 240 - player.w then
-    if currentScreen < #screens then
-      currentScreen = currentScreen + 1
-      player.x = 0
-    else
-      player.x = 240 - player.w
-    end
-  elseif player.x < 0 then
-    if currentScreen > 1 then
-      currentScreen = currentScreen - 1
-      player.x = 240 - player.w
-    else
-      player.x = 0
-    end
-  end
-
-  -- Apply gravity
-  player.vy = player.vy + gravity
-
-  local currentScreenData = screens[currentScreen]
-  local currentPlatforms = currentScreenData.platforms
-  -- Collision detection with platforms
-  for i, p in ipairs(currentPlatforms) do
-    if player.vy > 0 and player.y + player.h >= p.y and player.y + player.h <= p.y + p.h and player.x + player.w > p.x and player.x < p.x + p.w then
-      player.y = p.y - player.h
-      player.vy = 0
-      player.jumps = 0
-    end
-  end
-
-  -- Collision detection with ground
-  if player.y + player.h > ground.y and player.x + player.w > ground.x and player.x < ground.x + ground.w then
-    player.y = ground.y - player.h
-    player.vy = 0
-    player.jumps = 0
-  end
-
-  -- NPC interaction
-  if btnp(4) then
-    for i, npc in ipairs(currentScreenData.npcs) do
-      if math.abs(player.x - npc.x) < 12 and math.abs(player.y - npc.y) < 12 then
-        dialog_text = npc.name
-        gameState = STATE_DIALOG
-      end
-    end
-  end
-
-  -- Clear screen
-  cls(13)
-
-  draw_top_bar(currentScreenData.name)
-
-  -- Draw platforms
-  for i, p in ipairs(currentPlatforms) do
-    rect(p.x, p.y, p.w, p.h, 14)
-  end
-  
-  -- Draw NPCs
-  for i, npc in ipairs(currentScreenData.npcs) do
-    rect(npc.x, npc.y, 8, 8, 8)
-  end
-
-  -- Draw ground
-  rect(ground.x, ground.y, ground.w, ground.h, 14)
-
-  -- Draw player
-  rect(player.x, player.y, player.w, player.h, 6)
+  rect(player.x, player.y, player.w, player.h, COLOR_GREEN)
 end
 
 function draw_dialog()
-  rect(40, 50, 160, 40, 0)
-  rectb(40, 50, 160, 40, 14)
-  print(dialog_text, 120 - #dialog_text * 2, 68, 14)
+  rect(40, 50, 160, 40, COLOR_BLACK)
+  rectb(40, 50, 160, 40, COLOR_DARK_GREY)
+  print(dialog_text, 120 - #dialog_text * 2, 68, COLOR_DARK_GREY)
 end
 
 function update_dialog()
