@@ -42,13 +42,13 @@ MOVE_SPEED = 1.5
 MAX_JUMPS = 2
 
 -- Global variables (initialized)
-gameState = STATE_SPLASH
-currentScreen = 1
-dialog_text = ""
-splash_timer = 120 -- 2 seconds at 60fps
+local gameState = STATE_SPLASH
+local currentScreen = 1
+local dialog_text = ""
+local splash_timer = 120 -- 2 seconds at 60fps
 
 -- Player properties
-player = {
+local player = {
   x = PLAYER_START_X,
   y = PLAYER_START_Y,
   w = PLAYER_WIDTH,
@@ -59,7 +59,7 @@ player = {
 }
 
 -- Ground properties
-ground = {
+local ground = {
   x = GROUND_X,
   y = GROUND_Y,
   w = GROUND_W,
@@ -67,28 +67,28 @@ ground = {
 }
 
 -- Menu properties
-menuItems = {"Play", "Exit"}
-selectedMenuItem = 1
+local menuItems = {"Play", "Exit"}
+local selectedMenuItem = 1
 
-function draw_splash()
+local function draw_splash()
   cls(COLOR_BLACK)
   print("Mr. Anderson's", 78, 60, COLOR_LIGHT_GREY)
   print("Addventure", 90, 70, COLOR_LIGHT_GREY)
 end
 
-function update_splash()
+local function update_splash()
   splash_timer = splash_timer - 1
   if splash_timer <= 0 then
     gameState = STATE_MENU
   end
 end
 
-function draw_top_bar(title)
+local function draw_top_bar(title)
   rect(0, 0, SCREEN_WIDTH, 10, COLOR_BLACK)
   print(title, 3, 2, COLOR_LIGHT_GREY)
 end
 
-function draw_menu()
+local function draw_menu()
   cls(COLOR_LIGHT_GREY)
   draw_top_bar("Main Menu")
   for i, item in ipairs(menuItems) do
@@ -100,7 +100,7 @@ function draw_menu()
   end
 end
 
-function update_menu()
+local function update_menu()
   if btnp(0) then -- Up
     selectedMenuItem = selectedMenuItem - 1
     if selectedMenuItem < 1 then
@@ -130,7 +130,7 @@ function update_menu()
 end
 
 -- Screen data
-screens = {
+local screens = {
   { -- Screen 1
     name = "Screen 1",
     platforms = {
@@ -169,7 +169,7 @@ screens = {
   }
 }
 
-function game_update()
+local function game_update()
   -- Handle input
   if btn(2) then
     player.vx = -MOVE_SPEED
@@ -258,13 +258,13 @@ function game_update()
   rect(player.x, player.y, player.w, player.h, COLOR_GREEN)
 end
 
-function draw_dialog()
+local function draw_dialog()
   rect(40, 50, 160, 40, COLOR_BLACK)
   rectb(40, 50, 160, 40, COLOR_DARK_GREY)
   print(dialog_text, 120 - #dialog_text * 2, 68, COLOR_DARK_GREY)
 end
 
-function update_dialog()
+local function update_dialog()
   if btnp(4) or btnp(5) then
     gameState = STATE_GAME
   end
