@@ -6,6 +6,49 @@
 -- version: 0.1
 -- script:  lua
 
+-- Game state
+STATE_MENU = 0
+STATE_GAME = 1
+gameState = STATE_MENU
+
+-- Menu properties
+menuItems = {"Play", "Exit"}
+selectedMenuItem = 1
+
+function draw_menu()
+  cls(13)
+  print("Main Menu", 90, 40, 15)
+  for i, item in ipairs(menuItems) do
+    local color = 14
+    if i == selectedMenuItem then
+      color = 6
+    end
+    print(item, 108, 70 + (i-1)*10, color)
+  end
+end
+
+function update_menu()
+  if btnp(0) then -- Up
+    selectedMenuItem = selectedMenuItem - 1
+    if selectedMenuItem < 1 then
+      selectedMenuItem = #menuItems
+    end
+  elseif btnp(1) then -- Down
+    selectedMenuItem = selectedMenuItem + 1
+    if selectedMenuItem > #menuItems then
+      selectedMenuItem = 1
+    end
+  end
+
+  if btnp(4) or btnp(5) then -- A or B button
+    if selectedMenuItem == 1 then -- Play
+      gameState = STATE_GAME
+    elseif selectedMenuItem == 2 then -- Exit
+      exit()
+    end
+  end
+end
+
 
 -- Platforms properties
 platforms = {
@@ -38,7 +81,7 @@ jump_power = -5
 move_speed = 1.5
 max_jumps = 2
 
-function TIC()
+function game_update()
   -- Handle input
   if btn(2) then
     player.vx = -move_speed
@@ -89,8 +132,17 @@ function TIC()
 
   -- Draw player
   rect(player.x, player.y, player.w, player.h, 6)
-
 end
+
+function TIC()
+  if gameState == STATE_MENU then
+    update_menu()
+    draw_menu()
+  elseif gameState == STATE_GAME then
+    game_update()
+  end
+end
+
 
 -- <TILES>
 -- 001:eccccccccc888888caaaaaaaca888888cacccccccacc0ccccacc0ccccacc0ccc
