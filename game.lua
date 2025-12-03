@@ -42,6 +42,13 @@ function update_menu()
 
   if btnp(4) or btnp(5) then -- A or B button
     if selectedMenuItem == 1 then -- Play
+      -- Reset player state and screen for a new game
+      player.x = 120
+      player.y = 128
+      player.vx = 0
+      player.vy = 0
+      player.jumps = 0
+      currentScreen = 1
       gameState = STATE_GAME
     elseif selectedMenuItem == 2 then -- Exit
       exit()
@@ -49,12 +56,32 @@ function update_menu()
   end
 end
 
-
--- Platforms properties
-platforms = {
-  {x = 80, y = 110, w = 40, h = 8},
-  {x = 160, y = 90, w = 40, h = 8}
+-- Screen data
+screens = {
+  { -- Screen 1
+    platforms = {
+      {x = 80, y = 110, w = 40, h = 8},
+      {x = 160, y = 90, w = 40, h = 8}
+    }
+  },
+  { -- Screen 2
+    platforms = {
+      {x = 30, y = 100, w = 50, h = 8},
+      {x = 100, y = 80, w = 50, h = 8},
+      {x = 170, y = 60, w = 50, h = 8}
+    }
+  },
+  { -- Screen 3
+    platforms = {
+      {x = 50, y = 110, w = 30, h = 8},
+      {x = 100, y = 90, w = 30, h = 8},
+      {x = 150, y = 70, w = 30, h = 8},
+      {x = 200, y = 50, w = 30, h = 8}
+    }
+  }
 }
+
+currentScreen = 1
 
 -- Player properties
 player = {
@@ -100,11 +127,29 @@ function game_update()
   player.x = player.x + player.vx
   player.y = player.y + player.vy
 
+  -- Screen transition
+  if player.x > 240 - player.w then
+    if currentScreen < #screens then
+      currentScreen = currentScreen + 1
+      player.x = 0
+    else
+      player.x = 240 - player.w
+    end
+  elseif player.x < 0 then
+    if currentScreen > 1 then
+      currentScreen = currentScreen - 1
+      player.x = 240 - player.w
+    else
+      player.x = 0
+    end
+  end
+
   -- Apply gravity
   player.vy = player.vy + gravity
 
+  local currentPlatforms = screens[currentScreen].platforms
   -- Collision detection with platforms
-  for i, p in ipairs(platforms) do
+  for i, p in ipairs(currentPlatforms) do
     if player.vy > 0 and player.y + player.h >= p.y and player.y + player.h <= p.y + p.h and player.x + player.w > p.x and player.x < p.x + p.w then
       player.y = p.y - player.h
       player.vy = 0
@@ -123,7 +168,7 @@ function game_update()
   cls(13)
 
   -- Draw platforms
-  for i, p in ipairs(platforms) do
+  for i, p in ipairs(currentPlatforms) do
     rect(p.x, p.y, p.w, p.h, 14)
   end
 
