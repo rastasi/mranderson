@@ -18,9 +18,10 @@ COLOR_GREEN = 6
 COLOR_NPC = 8
 
 -- Game state
-STATE_MENU = 0
-STATE_GAME = 1
-STATE_DIALOG = 2
+STATE_SPLASH = 0
+STATE_MENU = 1
+STATE_GAME = 2
+STATE_DIALOG = 3
 
 -- Player constants
 PLAYER_WIDTH = 8
@@ -41,9 +42,10 @@ MOVE_SPEED = 1.5
 MAX_JUMPS = 2
 
 -- Global variables (initialized)
-gameState = STATE_MENU
+gameState = STATE_SPLASH
 currentScreen = 1
 dialog_text = ""
+splash_timer = 120 -- 2 seconds at 60fps
 
 -- Player properties
 player = {
@@ -67,6 +69,19 @@ ground = {
 -- Menu properties
 menuItems = {"Play", "Exit"}
 selectedMenuItem = 1
+
+function draw_splash()
+  cls(COLOR_BLACK)
+  print("Mr. Anderson's", 78, 60, COLOR_LIGHT_GREY)
+  print("Addventure", 90, 70, COLOR_LIGHT_GREY)
+end
+
+function update_splash()
+  splash_timer = splash_timer - 1
+  if splash_timer <= 0 then
+    gameState = STATE_MENU
+  end
+end
 
 function draw_top_bar(title)
   rect(0, 0, SCREEN_WIDTH, 10, COLOR_BLACK)
@@ -256,7 +271,10 @@ function update_dialog()
 end
 
 function TIC()
-  if gameState == STATE_MENU then
+  if gameState == STATE_SPLASH then
+    update_splash()
+    draw_splash()
+  elseif gameState == STATE_MENU then
     update_menu()
     draw_menu()
   elseif gameState == STATE_GAME then
