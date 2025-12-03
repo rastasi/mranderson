@@ -1,8 +1,8 @@
--- title:   game title
--- author:  game developer, email, etc.
--- desc:    short description
--- site:    website link
--- license: MIT License (change this to your license of choice)
+-- title:   Mr Anderson's Addventure
+-- author:  Zsolt Tasnadi
+-- desc:    Life of a programmer in the Matrix
+-- site:    http://teletype.hu
+-- license: MIT License
 -- version: 0.1
 -- script:  lua
 
@@ -15,9 +15,14 @@ gameState = STATE_MENU
 menuItems = {"Play", "Exit"}
 selectedMenuItem = 1
 
+function draw_top_bar(title)
+  rect(0, 0, 240, 10, 0)
+  print(title, 3, 2, 13)
+end
+
 function draw_menu()
   cls(13)
-  print("Main Menu", 90, 40, 15)
+  draw_top_bar("Main Menu")
   for i, item in ipairs(menuItems) do
     local color = 14
     if i == selectedMenuItem then
@@ -59,12 +64,14 @@ end
 -- Screen data
 screens = {
   { -- Screen 1
+    name = "Home Screen",
     platforms = {
       {x = 80, y = 110, w = 40, h = 8},
       {x = 160, y = 90, w = 40, h = 8}
     }
   },
   { -- Screen 2
+    name = "Second Screen",
     platforms = {
       {x = 30, y = 100, w = 50, h = 8},
       {x = 100, y = 80, w = 50, h = 8},
@@ -72,6 +79,7 @@ screens = {
     }
   },
   { -- Screen 3
+    name = "Third Screen",
     platforms = {
       {x = 50, y = 110, w = 30, h = 8},
       {x = 100, y = 90, w = 30, h = 8},
@@ -166,6 +174,8 @@ function game_update()
 
   -- Clear screen
   cls(13)
+
+  draw_top_bar(screens[currentScreen].name)
 
   -- Draw platforms
   for i, p in ipairs(currentPlatforms) do
