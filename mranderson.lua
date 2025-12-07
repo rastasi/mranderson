@@ -1,4 +1,4 @@
--- title:   Mr Anderson's Addventure
+-- title:   Mr Anderson's Adventure
 -- author:  Zsolt Tasnadi
 -- desc:    Life of a programmer in the Matrix
 -- site:    http://teletype.hu
