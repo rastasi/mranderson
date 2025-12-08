@@ -3,7 +3,7 @@
 -- desc:    Life of a programmer in the Vector
 -- site:    http://teletype.hu
 -- license: MIT License
--- version: 0.4
+-- version: 0.5
 -- script:  lua
 
 --------------------------------------------------------------------------------
@@ -44,14 +44,16 @@ local Config = {
 -- Game States
 --------------------------------------------------------------------------------
 local GAME_STATE_SPLASH = 0
-local GAME_STATE_MENU = 1
-local GAME_STATE_GAME = 2
-local GAME_STATE_DIALOG = 3
+local GAME_STATE_INTRO = 1
+local GAME_STATE_MENU = 2
+local GAME_STATE_GAME = 3
+local GAME_STATE_DIALOG = 4
 
 --------------------------------------------------------------------------------
 -- Modules
 --------------------------------------------------------------------------------
 local Splash = {}
+local Intro = {}
 local Menu = {}
 local Game = {}
 local UI = {}
@@ -65,6 +67,11 @@ local MenuActions = {}
 --------------------------------------------------------------------------------
 local State = {
   game_state = GAME_STATE_SPLASH,
+  intro = {
+    y = Config.screen.height,
+    speed = 0.5,
+    text = "Mr. Anderson is an average\nprogrammer. His daily life\nrevolves around debugging,\npull requests, and end-of-sprint\nmeetings, all while secretly\ndreaming of being destined\nfor something more."
+  },
   current_screen = 1,
   dialog_text = "",
   splash_timer = Config.timing.splash_duration,
@@ -226,7 +233,36 @@ end
 
 function Splash.update()
   State.splash_timer = State.splash_timer - 1
-  if State.splash_timer <= 0 then
+  if State.splash_timer <= 0 or Input.action() then
+    State.game_state = GAME_STATE_INTRO
+  end
+end
+
+--------------------------------------------------------------------------------
+-- Intro Module
+--------------------------------------------------------------------------------
+function Intro.draw()
+  cls(Config.colors.black)
+  local x = (Config.screen.width - 132) / 2 -- Centered text
+  print(State.intro.text, x, State.intro.y, Config.colors.green)
+end
+
+function Intro.update()
+  State.intro.y = State.intro.y - State.intro.speed
+
+  -- Count lines in intro text to determine when scrolling is done
+  local lines = 1
+  for _ in string.gmatch(State.intro.text, "\n") do
+    lines = lines + 1
+  end
+
+  -- When text is off-screen, go to menu
+  if State.intro.y < -lines * 8 then
+    State.game_state = GAME_STATE_MENU
+  end
+
+  -- Skip intro by pressing A
+  if Input.action() then
     State.game_state = GAME_STATE_MENU
   end
 end
@@ -427,6 +463,10 @@ local STATE_HANDLERS = {
   [GAME_STATE_SPLASH] = function()
     Splash.update()
     Splash.draw()
+  end,
+  [GAME_STATE_INTRO] = function()
+    Intro.update()
+    Intro.draw()
   end,
   [GAME_STATE_MENU] = function()
     Menu.update()
