@@ -1,9 +1,9 @@
 -- title:   Mr Anderson's Adventure
 -- author:  Zsolt Tasnadi
--- desc:    Life of a programmer in the Matrix
+-- desc:    Life of a programmer in the Vector
 -- site:    http://teletype.hu
 -- license: MIT License
--- version: 0.3
+-- version: 0.4
 -- script:  lua
 
 --------------------------------------------------------------------------------
@@ -19,13 +19,15 @@ local Config = {
     light_grey = 13,
     dark_grey = 14,
     green = 6,
-    npc = 8
+    npc = 8,
+    item = 12 -- yellow
   },
   player = {
     w = 8,
     h = 8,
     start_x = 120,
     start_y = 128,
+    sprite_id = 1
   },
   physics = {
     gravity = 0.5,
@@ -54,6 +56,9 @@ local Menu = {}
 local Game = {}
 local UI = {}
 local Input = {}
+local NpcActions = {}
+local ItemActions = {}
+local MenuActions = {}
 
 --------------------------------------------------------------------------------
 -- Game State
@@ -70,7 +75,8 @@ local State = {
     h = Config.player.h,
     vx = 0,
     vy = 0,
-    jumps = 0
+    jumps = 0,
+    sprite_id = Config.player.sprite_id
   },
   ground = {
     x = 0,
@@ -78,8 +84,11 @@ local State = {
     w = Config.screen.width,
     h = 8
   },
-  menu_items = {"Play", "Exit"},
+  menu_items = {},
   selected_menu_item = 1,
+  dialog_menu_items = {},
+  selected_dialog_menu_item = 1,
+  active_entity = nil,
   -- Screen data
   screens = {
     { -- Screen 1
@@ -89,8 +98,11 @@ local State = {
         {x = 160, y = 90, w = 40, h = 8}
       },
       npcs = {
-        {x = 180, y = 82, name = "Trinity"},
-        {x = 90, y = 102, name = "Oracle"}
+        {x = 180, y = 82, name = "Trinity", sprite_id = 2},
+        {x = 90, y = 102, name = "Oracle", sprite_id = 3}
+      },
+      items = {
+        {x = 100, y = 128, w=8, h=8, name = "Key", sprite_id = 4}
       }
     },
     { -- Screen 2
@@ -101,8 +113,11 @@ local State = {
         {x = 170, y = 60, w = 50, h = 8}
       },
       npcs = {
-        {x = 120, y = 72, name = "Morpheus"},
-        {x = 40, y = 92, name = "Tank"}
+        {x = 120, y = 72, name = "Morpheus", sprite_id = 5},
+        {x = 40, y = 92, name = "Tank", sprite_id = 6}
+      },
+      items = {
+        {x = 180, y = 52, w=8, h=8, name = "Potion", sprite_id = 7}
       }
     },
     { -- Screen 3
@@ -114,12 +129,57 @@ local State = {
         {x = 200, y = 50, w = 30, h = 8}
       },
       npcs = {
-        {x = 210, y = 42, name = "Agent Smith"},
-        {x = 160, y = 62, name = "Cypher"}
-      }
+        {x = 210, y = 42, name = "Agent Smith", sprite_id = 8},
+        {x = 160, y = 62, name = "Cypher", sprite_id = 9}
+      },
+      items = {}
     }
   }
 }
+
+--------------------------------------------------------------------------------
+-- Menu Actions
+--------------------------------------------------------------------------------
+function MenuActions.play()
+  -- Reset player state and screen for a new game
+  State.player.x = Config.player.start_x
+  State.player.y = Config.player.start_y
+  State.player.vx = 0
+  State.player.vy = 0
+  State.player.jumps = 0
+  State.current_screen = 1
+  State.game_state = GAME_STATE_GAME
+end
+
+function MenuActions.exit()
+  exit()
+end
+
+-- Initialize menu items after actions are defined
+State.menu_items = {
+  {label = "Play", action = MenuActions.play},
+  {label = "Exit", action = MenuActions.exit}
+}
+
+--------------------------------------------------------------------------------
+-- NPC Actions
+--------------------------------------------------------------------------------
+function NpcActions.talk_to() end
+function NpcActions.fight() end
+function NpcActions.goodbye()
+  State.game_state = GAME_STATE_GAME
+end
+
+--------------------------------------------------------------------------------
+-- Item Actions
+--------------------------------------------------------------------------------
+function ItemActions.use() end
+function ItemActions.look_at() end
+function ItemActions.take_away() end
+function ItemActions.goodbye()
+  State.game_state = GAME_STATE_GAME
+end
+
 
 --------------------------------------------------------------------------------
 -- Input Module
@@ -128,7 +188,9 @@ function Input.up() return btnp(0) end
 function Input.down() return btnp(1) end
 function Input.left() return btn(2) end
 function Input.right() return btn(3) end
+function Input.jump() return btnp(4) end
 function Input.action() return btnp(4) end
+function Input.interact() return btnp(5) end -- B button
 function Input.back() return btnp(5) end
 
 --------------------------------------------------------------------------------
@@ -140,9 +202,17 @@ function UI.draw_top_bar(title)
 end
 
 function UI.draw_dialog()
-  rect(40, 50, 160, 40, Config.colors.black)
-  rectb(40, 50, 160, 40, Config.colors.dark_grey)
-  print(State.dialog_text, 120 - #State.dialog_text * 2, 68, Config.colors.light_grey)
+  rect(40, 40, 160, 80, Config.colors.black)
+  rectb(40, 40, 160, 80, Config.colors.dark_grey)
+  print(State.dialog_text, 120 - #State.dialog_text * 2, 45, Config.colors.light_grey)
+
+  for i, item in ipairs(State.dialog_menu_items) do
+    local color = Config.colors.dark_grey
+    if i == State.selected_dialog_menu_item then
+      color = Config.colors.green
+    end
+    print(item.label, 50, 60 + (i-1)*10, color)
+  end
 end
 
 --------------------------------------------------------------------------------
@@ -172,7 +242,7 @@ function Menu.draw()
     if i == State.selected_menu_item then
       color = Config.colors.green
     end
-    print(item, 108, 70 + (i-1)*10, color)
+    print(item.label, 108, 70 + (i-1)*10, color)
   end
 end
 
@@ -189,18 +259,10 @@ function Menu.update()
     end
   end
 
-  if Input.action() or Input.back() then
-    if State.selected_menu_item == 1 then -- Play
-      -- Reset player state and screen for a new game
-      State.player.x = Config.player.start_x
-      State.player.y = Config.player.start_y
-      State.player.vx = 0
-      State.player.vy = 0
-      State.player.jumps = 0
-      State.current_screen = 1
-      State.game_state = GAME_STATE_GAME
-    elseif State.selected_menu_item == 2 then -- Exit
-      exit()
+  if Input.action() then
+    local selected_item = State.menu_items[State.selected_menu_item]
+    if selected_item and selected_item.action then
+      selected_item.action()
     end
   end
 end
@@ -218,17 +280,22 @@ function Game.draw()
   for _, p in ipairs(currentScreenData.platforms) do
     rect(p.x, p.y, p.w, p.h, Config.colors.dark_grey)
   end
+
+  -- Draw items
+  for _, item in ipairs(currentScreenData.items) do
+    spr(item.sprite_id, item.x, item.y, 0)
+  end
   
   -- Draw NPCs
   for _, npc in ipairs(currentScreenData.npcs) do
-    rect(npc.x, npc.y, Config.player.w, Config.player.h, Config.colors.npc)
+    spr(npc.sprite_id, npc.x, npc.y, 0)
   end
 
   -- Draw ground
   rect(State.ground.x, State.ground.y, State.ground.w, State.ground.h, Config.colors.dark_grey)
 
   -- Draw player
-  rect(State.player.x, State.player.y, State.player.w, State.player.h, Config.colors.green)
+  spr(State.player.sprite_id, State.player.x, State.player.y, 0)
 end
 
 function Game.update()
@@ -241,7 +308,7 @@ function Game.update()
     State.player.vx = 0
   end
 
-  if Input.action() and State.player.jumps < Config.physics.max_jumps then
+  if Input.jump() and State.player.jumps < Config.physics.max_jumps then
     State.player.vy = Config.physics.jump_power
     State.player.jumps = State.player.jumps + 1
   end
@@ -287,19 +354,68 @@ function Game.update()
     State.player.jumps = 0
   end
 
-  -- NPC interaction
-  if Input.action() then
+  -- Entity interaction
+  if Input.interact() then
+    local interaction_found = false
+    -- NPC interaction
     for _, npc in ipairs(currentScreenData.npcs) do
       if math.abs(State.player.x - npc.x) < 12 and math.abs(State.player.y - npc.y) < 12 then
+        State.active_entity = npc
         State.dialog_text = npc.name
         State.game_state = GAME_STATE_DIALOG
+        State.dialog_menu_items = {
+          {label = "Talk to", action = NpcActions.talk_to},
+          {label = "Fight", action = NpcActions.fight},
+          {label = "Goodbye", action = NpcActions.goodbye}
+        }
+        State.selected_dialog_menu_item = 1
+        interaction_found = true
+        break
+      end
+    end
+
+    if interaction_found then return end
+
+    -- Item interaction
+    for _, item in ipairs(currentScreenData.items) do
+      if math.abs(State.player.x - item.x) < 8 and math.abs(State.player.y - item.y) < 8 then
+        State.active_entity = item
+        State.dialog_text = item.name
+        State.game_state = GAME_STATE_DIALOG
+        State.dialog_menu_items = {
+          {label = "Use", action = ItemActions.use},
+          {label = "Look at", action = ItemActions.look_at},
+          {label = "Take away", action = ItemActions.take_away},
+          {label = "Goodbye", action = ItemActions.goodbye}
+        }
+        State.selected_dialog_menu_item = 1
+        break
       end
     end
   end
 end
 
 function Game.update_dialog()
-  if Input.action() or Input.back() then
+  if Input.up() then
+    State.selected_dialog_menu_item = State.selected_dialog_menu_item - 1
+    if State.selected_dialog_menu_item < 1 then
+      State.selected_dialog_menu_item = #State.dialog_menu_items
+    end
+  elseif Input.down() then
+    State.selected_dialog_menu_item = State.selected_dialog_menu_item + 1
+    if State.selected_dialog_menu_item > #State.dialog_menu_items then
+      State.selected_dialog_menu_item = 1
+    end
+  end
+
+  if Input.action() then
+    local selected_item = State.dialog_menu_items[State.selected_dialog_menu_item]
+    if selected_item and selected_item.action then
+      selected_item.action()
+    end
+  end
+  
+  if Input.back() then
     State.game_state = GAME_STATE_GAME
   end
 end
@@ -336,14 +452,15 @@ end
 
 
 -- <TILES>
--- 001:eccccccccc888888caaaaaaaca888888cacccccccacc0ccccacc0ccccacc0ccc
--- 002:ccccceee8888cceeaaaa0cee888a0ceeccca0ccc0cca0c0c0cca0c0c0cca0c0c
--- 003:eccccccccc888888caaaaaaaca888888cacccccccacccccccacc0ccccacc0ccc
--- 004:ccccceee8888cceeaaaa0cee888a0ceeccca0cccccca0c0c0cca0c0c0cca0c0c
--- 017:cacccccccaaaaaaacaaacaaacaaaaccccaaaaaaac8888888cc000cccecccccec
--- 018:ccca00ccaaaa0ccecaaa0ceeaaaa0ceeaaaa0cee8888ccee000cceeecccceeee
--- 019:cacccccccaaaaaaacaaacaaacaaaaccccaaaaaaac8888888cc000cccecccccec
--- 020:ccca00ccaaaa0ccecaaa0ceeaaaa0ceeaaaa0cee8888ccee000cceeecccceeee
+-- 000:4444444444444444444444444444444444444444444444444444444444444444
+-- 001:1111111111111111111111111111111111111111111111111111111111111111
+-- 002:5555555555555555555555555555555555555555555555555555555555555555
+-- 003:6666666666666666666666666666666666666666666666666666666666666666
+-- 004:7777777777777777777777777777777777777777777777777777777777777777
+-- 005:8888888888888888888888888888888888888888888888888888888888888888
+-- 006:9999999999999999999999999999999999999999999999999999999999999999
+-- 007:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+-- 008:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 -- </TILES>
 
 -- <WAVES>
@@ -363,3 +480,4 @@ end
 -- <PALETTE>
 -- 000:1a1c2c5d275db13e53ef7d57ffcd75a7f07038b76425717929366f3b5dc941a6f673eff7f4f4f494b0c2566c86333c57
 -- </PALETTE>
+
