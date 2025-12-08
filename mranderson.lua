@@ -49,6 +49,7 @@ local GAME_STATE_MENU = 2
 local GAME_STATE_GAME = 3
 local GAME_STATE_DIALOG = 4
 local GAME_STATE_INVENTORY = 5
+local GAME_STATE_INVENTORY_ACTION = 6
 
 --------------------------------------------------------------------------------
 -- Modules
@@ -96,6 +97,7 @@ local State = {
   },
   menu_items = {},
   selected_menu_item = 1,
+  selected_inventory_item = 1,
   dialog_menu_items = {},
   selected_dialog_menu_item = 1,
   active_entity = nil,
@@ -158,12 +160,33 @@ function Inventory.draw()
     print("Inventory is empty.", 70, 70, Config.colors.light_grey)
   else
     for i, item in ipairs(State.inventory) do
-      print(item.name, 70, 20 + i * 10, Config.colors.light_grey)
+			local color = Config.colors.light_grey
+			if i == State.selected_inventory_item then
+				color = Config.colors.green
+				print(">", 60, 20 + i * 10, color)
+			end
+      print(item.name, 70, 20 + i * 10, color)
     end
   end
 end
 
 function Inventory.update()
+  State.selected_inventory_item = UI.update_menu(State.inventory, State.selected_inventory_item)
+
+  if Input.action() and #State.inventory > 0 then
+    local selected_item = State.inventory[State.selected_inventory_item]
+    State.active_entity = selected_item
+    State.dialog_text = selected_item.name
+    State.game_state = GAME_STATE_INVENTORY_ACTION
+    State.dialog_menu_items = {
+      {label = "Use", action = ItemActions.use},
+      {label = "Drop", action = ItemActions.drop},
+      {label = "Look at", action = ItemActions.look_at},
+      {label = "Goodbye", action = ItemActions.inventory_goodbye}
+    }
+    State.selected_dialog_menu_item = 1
+  end
+
   if Input.back() then
     State.game_state = GAME_STATE_GAME
   end
@@ -205,8 +228,14 @@ end
 --------------------------------------------------------------------------------
 -- Item Actions
 --------------------------------------------------------------------------------
-function ItemActions.use() end
-function ItemActions.look_at() end
+function ItemActions.use()
+  print("Used item: " .. State.active_entity.name)
+  State.game_state = GAME_STATE_INVENTORY
+end
+function ItemActions.look_at()
+  print("Looked at item: " .. State.active_entity.name)
+	State.game_state = GAME_STATE_INVENTORY
+end
 function ItemActions.put_away()
   -- Add item to inventory
   table.insert(State.inventory, State.active_entity)
@@ -225,6 +254,29 @@ function ItemActions.put_away()
 end
 function ItemActions.goodbye()
   State.game_state = GAME_STATE_GAME
+end
+
+function ItemActions.inventory_goodbye()
+	State.game_state = GAME_STATE_INVENTORY
+end
+
+function ItemActions.drop()
+  -- Remove item from inventory
+  for i, item in ipairs(State.inventory) do
+    if item == State.active_entity then
+      table.remove(State.inventory, i)
+      break
+    end
+  end
+
+  -- Add item to screen
+  local currentScreenData = State.screens[State.current_screen]
+	State.active_entity.x = State.player.x
+	State.active_entity.y = State.player.y
+  table.insert(currentScreenData.items, State.active_entity)
+
+  -- Go back to inventory
+  State.game_state = GAME_STATE_INVENTORY
 end
 
 
@@ -522,6 +574,11 @@ local STATE_HANDLERS = {
   [GAME_STATE_INVENTORY] = function()
     Inventory.update()
     Inventory.draw()
+  end,
+  [GAME_STATE_INVENTORY_ACTION] = function()
+    Inventory.draw() -- Draw inventory behind dialog
+    UI.draw_dialog()
+    Game.update_dialog()
   end,
 }
 
