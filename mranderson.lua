@@ -3,7 +3,7 @@
 -- desc:    Life of a programmer in the Vector
 -- site:    http://teletype.hu
 -- license: MIT License
--- version: 0.5
+-- version: 0.6
 -- script:  lua
 
 --------------------------------------------------------------------------------
@@ -204,31 +204,49 @@ function Input.back() return btnp(5) end
 -- UI Module
 --------------------------------------------------------------------------------
 function UI.draw_top_bar(title)
-  rect(0, 0, Config.screen.width, 10, Config.colors.black)
-  print(title, 3, 2, Config.colors.light_grey)
+  rect(0, 0, Config.screen.width, 10, Config.colors.dark_grey)
+  print(title, 3, 2, Config.colors.green)
 end
 
 function UI.draw_dialog()
   rect(40, 40, 160, 80, Config.colors.black)
-  rectb(40, 40, 160, 80, Config.colors.dark_grey)
+  rectb(40, 40, 160, 80, Config.colors.green)
   print(State.dialog_text, 120 - #State.dialog_text * 2, 45, Config.colors.light_grey)
+  UI.draw_menu(State.dialog_menu_items, State.selected_dialog_menu_item, 50, 60)
+end
 
-  for i, item in ipairs(State.dialog_menu_items) do
-    local color = Config.colors.dark_grey
-    if i == State.selected_dialog_menu_item then
-      color = Config.colors.green
+function UI.draw_menu(items, selected_item, x, y)
+  for i, item in ipairs(items) do
+    local current_y = y + (i-1)*10
+    if i == selected_item then
+      print(">", x - 8, current_y, Config.colors.green)
     end
-    print(item.label, 50, 60 + (i-1)*10, color)
+    print(item.label, x, current_y, Config.colors.green)
   end
+end
+
+function UI.update_menu(items, selected_item)
+  if Input.up() then
+    selected_item = selected_item - 1
+    if selected_item < 1 then
+      selected_item = #items
+    end
+  elseif Input.down() then
+    selected_item = selected_item + 1
+    if selected_item > #items then
+      selected_item = 1
+    end
+  end
+  return selected_item
 end
 
 --------------------------------------------------------------------------------
 -- Splash Module
 --------------------------------------------------------------------------------
 function Splash.draw()
-  cls(Config.colors.black)
-  print("Mr. Anderson's", 78, 60, Config.colors.light_grey)
-  print("Addventure", 90, 70, Config.colors.light_grey)
+  cls(Config.colors.dark_grey)
+  print("Mr. Anderson's", 78, 60, Config.colors.green)
+  print("Addventure", 90, 70, Config.colors.green)
 end
 
 function Splash.update()
@@ -242,7 +260,7 @@ end
 -- Intro Module
 --------------------------------------------------------------------------------
 function Intro.draw()
-  cls(Config.colors.black)
+  cls(Config.colors.dark_grey)
   local x = (Config.screen.width - 132) / 2 -- Centered text
   print(State.intro.text, x, State.intro.y, Config.colors.green)
 end
@@ -271,29 +289,13 @@ end
 -- Menu Module
 --------------------------------------------------------------------------------
 function Menu.draw()
-  cls(Config.colors.light_grey)
+  cls(Config.colors.dark_grey)
   UI.draw_top_bar("Main Menu")
-  for i, item in ipairs(State.menu_items) do
-    local color = Config.colors.dark_grey
-    if i == State.selected_menu_item then
-      color = Config.colors.green
-    end
-    print(item.label, 108, 70 + (i-1)*10, color)
-  end
+  UI.draw_menu(State.menu_items, State.selected_menu_item, 108, 70)
 end
 
 function Menu.update()
-  if Input.up() then
-    State.selected_menu_item = State.selected_menu_item - 1
-    if State.selected_menu_item < 1 then
-      State.selected_menu_item = #State.menu_items
-    end
-  elseif Input.down() then
-    State.selected_menu_item = State.selected_menu_item + 1
-    if State.selected_menu_item > #State.menu_items then
-      State.selected_menu_item = 1
-    end
-  end
+  State.selected_menu_item = UI.update_menu(State.menu_items, State.selected_menu_item)
 
   if Input.action() then
     local selected_item = State.menu_items[State.selected_menu_item]
@@ -309,12 +311,12 @@ end
 function Game.draw()
   local currentScreenData = State.screens[State.current_screen]
   
-  cls(Config.colors.light_grey)
+  cls(Config.colors.dark_grey)
   UI.draw_top_bar(currentScreenData.name)
 
   -- Draw platforms
   for _, p in ipairs(currentScreenData.platforms) do
-    rect(p.x, p.y, p.w, p.h, Config.colors.dark_grey)
+    rect(p.x, p.y, p.w, p.h, Config.colors.green)
   end
 
   -- Draw items
@@ -432,17 +434,7 @@ function Game.update()
 end
 
 function Game.update_dialog()
-  if Input.up() then
-    State.selected_dialog_menu_item = State.selected_dialog_menu_item - 1
-    if State.selected_dialog_menu_item < 1 then
-      State.selected_dialog_menu_item = #State.dialog_menu_items
-    end
-  elseif Input.down() then
-    State.selected_dialog_menu_item = State.selected_dialog_menu_item + 1
-    if State.selected_dialog_menu_item > #State.dialog_menu_items then
-      State.selected_dialog_menu_item = 1
-    end
-  end
+  State.selected_dialog_menu_item = UI.update_menu(State.dialog_menu_items, State.selected_dialog_menu_item)
 
   if Input.action() then
     local selected_item = State.dialog_menu_items[State.selected_dialog_menu_item]
