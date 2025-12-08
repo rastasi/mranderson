@@ -48,6 +48,7 @@ local GAME_STATE_INTRO = 1
 local GAME_STATE_MENU = 2
 local GAME_STATE_GAME = 3
 local GAME_STATE_DIALOG = 4
+local GAME_STATE_INVENTORY = 5
 
 --------------------------------------------------------------------------------
 -- Modules
@@ -58,6 +59,7 @@ local Menu = {}
 local Game = {}
 local UI = {}
 local Input = {}
+local Inventory = {}
 local NpcActions = {}
 local ItemActions = {}
 local MenuActions = {}
@@ -67,6 +69,7 @@ local MenuActions = {}
 --------------------------------------------------------------------------------
 local State = {
   game_state = GAME_STATE_SPLASH,
+  inventory = {},
   intro = {
     y = Config.screen.height,
     speed = 0.5,
@@ -145,6 +148,28 @@ local State = {
 }
 
 --------------------------------------------------------------------------------
+-- Inventory Module
+--------------------------------------------------------------------------------
+function Inventory.draw()
+  cls(Config.colors.dark_grey)
+  UI.draw_top_bar("Inventory")
+
+  if #State.inventory == 0 then
+    print("Inventory is empty.", 70, 70, Config.colors.light_grey)
+  else
+    for i, item in ipairs(State.inventory) do
+      print(item.name, 70, 20 + i * 10, Config.colors.light_grey)
+    end
+  end
+end
+
+function Inventory.update()
+  if Input.back() then
+    State.game_state = GAME_STATE_GAME
+  end
+end
+
+--------------------------------------------------------------------------------
 -- Menu Actions
 --------------------------------------------------------------------------------
 function MenuActions.play()
@@ -182,7 +207,22 @@ end
 --------------------------------------------------------------------------------
 function ItemActions.use() end
 function ItemActions.look_at() end
-function ItemActions.take_away() end
+function ItemActions.put_away()
+  -- Add item to inventory
+  table.insert(State.inventory, State.active_entity)
+
+  -- Remove item from screen
+  local currentScreenData = State.screens[State.current_screen]
+  for i, item in ipairs(currentScreenData.items) do
+    if item == State.active_entity then
+      table.remove(currentScreenData.items, i)
+      break
+    end
+  end
+
+  -- Go back to game
+  State.game_state = GAME_STATE_GAME
+end
 function ItemActions.goodbye()
   State.game_state = GAME_STATE_GAME
 end
@@ -412,23 +452,29 @@ function Game.update()
       end
     end
 
-    if interaction_found then return end
-
-    -- Item interaction
-    for _, item in ipairs(currentScreenData.items) do
-      if math.abs(State.player.x - item.x) < 8 and math.abs(State.player.y - item.y) < 8 then
-        State.active_entity = item
-        State.dialog_text = item.name
-        State.game_state = GAME_STATE_DIALOG
-        State.dialog_menu_items = {
-          {label = "Use", action = ItemActions.use},
-          {label = "Look at", action = ItemActions.look_at},
-          {label = "Take away", action = ItemActions.take_away},
-          {label = "Goodbye", action = ItemActions.goodbye}
-        }
-        State.selected_dialog_menu_item = 1
-        break
+    if not interaction_found then
+      -- Item interaction
+      for _, item in ipairs(currentScreenData.items) do
+        if math.abs(State.player.x - item.x) < 8 and math.abs(State.player.y - item.y) < 8 then
+          State.active_entity = item
+          State.dialog_text = item.name
+          State.game_state = GAME_STATE_DIALOG
+          State.dialog_menu_items = {
+            {label = "Use", action = ItemActions.use},
+            {label = "Look at", action = ItemActions.look_at},
+            {label = "Put away", action = ItemActions.put_away},
+            {label = "Goodbye", action = ItemActions.goodbye}
+          }
+          State.selected_dialog_menu_item = 1
+          interaction_found = true
+          break
+        end
       end
+    end
+
+    -- If no interaction happened, open inventory
+    if not interaction_found then
+      State.game_state = GAME_STATE_INVENTORY
     end
   end
 end
@@ -472,6 +518,10 @@ local STATE_HANDLERS = {
     Game.draw() -- Draw game behind dialog
     UI.draw_dialog()
     Game.update_dialog()
+  end,
+  [GAME_STATE_INVENTORY] = function()
+    Inventory.update()
+    Inventory.draw()
   end,
 }
 
