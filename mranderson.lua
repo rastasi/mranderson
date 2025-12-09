@@ -3,7 +3,7 @@
 -- desc:    Life of a programmer in the Vector
 -- site:    http://teletype.hu
 -- license: MIT License
--- version: 0.6
+-- version: 0.7
 -- script:  lua
 
 --------------------------------------------------------------------------------
@@ -114,7 +114,7 @@ local State = {
         {x = 90, y = 102, name = "Oracle", sprite_id = 3}
       },
       items = {
-        {x = 100, y = 128, w=8, h=8, name = "Key", sprite_id = 4}
+        {x = 100, y = 128, w=8, h=8, name = "Key", sprite_id = 4, desc = "A rusty old key. It might open something."}
       }
     },
     { -- Screen 2
@@ -129,7 +129,7 @@ local State = {
         {x = 40, y = 92, name = "Tank", sprite_id = 6}
       },
       items = {
-        {x = 180, y = 52, w=8, h=8, name = "Potion", sprite_id = 7}
+        {x = 180, y = 52, w=8, h=8, name = "Potion", sprite_id = 7, desc = "A glowing red potion. It looks potent."}
       }
     },
     { -- Screen 3
@@ -176,13 +176,14 @@ function Inventory.update()
   if Input.action() and #State.inventory > 0 then
     local selected_item = State.inventory[State.selected_inventory_item]
     State.active_entity = selected_item
-    State.dialog_text = selected_item.name
+    State.dialog_text = ""
     State.game_state = GAME_STATE_INVENTORY_ACTION
+    State.showing_description = false
     State.dialog_menu_items = {
       {label = "Use", action = ItemActions.use},
       {label = "Drop", action = ItemActions.drop},
       {label = "Look at", action = ItemActions.look_at},
-      {label = "Goodbye", action = ItemActions.inventory_goodbye}
+      {label = "Go back", action = ItemActions.go_back_from_inventory_action}
     }
     State.selected_dialog_menu_item = 1
   end
@@ -221,7 +222,7 @@ State.menu_items = {
 --------------------------------------------------------------------------------
 function NpcActions.talk_to() end
 function NpcActions.fight() end
-function NpcActions.goodbye()
+function NpcActions.go_back()
   State.game_state = GAME_STATE_GAME
 end
 
@@ -233,8 +234,8 @@ function ItemActions.use()
   State.game_state = GAME_STATE_INVENTORY
 end
 function ItemActions.look_at()
-  print("Looked at item: " .. State.active_entity.name)
-	State.game_state = GAME_STATE_INVENTORY
+  State.dialog_text = State.active_entity.desc
+  State.showing_description = true
 end
 function ItemActions.put_away()
   -- Add item to inventory
@@ -252,12 +253,12 @@ function ItemActions.put_away()
   -- Go back to game
   State.game_state = GAME_STATE_GAME
 end
-function ItemActions.goodbye()
+function ItemActions.go_back_from_item_dialog()
   State.game_state = GAME_STATE_GAME
 end
 
-function ItemActions.inventory_goodbye()
-	State.game_state = GAME_STATE_INVENTORY
+function ItemActions.go_back_from_inventory_action()
+	State.game_state = GAME_STATE_GAME
 end
 
 function ItemActions.drop()
@@ -303,8 +304,28 @@ end
 function UI.draw_dialog()
   rect(40, 40, 160, 80, Config.colors.black)
   rectb(40, 40, 160, 80, Config.colors.green)
-  print(State.dialog_text, 120 - #State.dialog_text * 2, 45, Config.colors.light_grey)
-  UI.draw_menu(State.dialog_menu_items, State.selected_dialog_menu_item, 50, 60)
+
+  -- Display the entity's name as the dialog title
+  print(State.active_entity.name, 120 - #State.active_entity.name * 2, 45, Config.colors.green)
+
+  -- Display the dialog content (description for "look at", or initial name/dialog for others)
+  local wrapped_lines = UI.word_wrap(State.dialog_text, 25) -- Max 25 chars per line
+  local current_y = 55 -- Starting Y position for the first line of content
+  for _, line in ipairs(wrapped_lines) do
+    print(line, 50, current_y, Config.colors.light_grey)
+    current_y = current_y + 8 -- Move to the next line (8 pixels for default font height + padding)
+  end
+  
+  -- Adjust menu position based on the number of wrapped lines
+  if not State.showing_description then
+    UI.draw_menu(State.dialog_menu_items, State.selected_dialog_menu_item, 50, current_y + 2)
+  else
+    -- If description is showing, provide a "Go back" option automatically, or close dialog on action
+    -- For now, let's just make it implicitly wait for Input.action() or Input.back() to close
+    -- Or we can add a specific "Back" option here.
+    -- Let's add a "Back" option for explicit return from description.
+    print("[A] Go Back", 50, current_y + 10, Config.colors.green)
+  end
 end
 
 function UI.draw_menu(items, selected_item, x, y)
@@ -330,6 +351,42 @@ function UI.update_menu(items, selected_item)
     end
   end
   return selected_item
+end
+
+function UI.word_wrap(text, max_chars_per_line)
+    local lines = {}
+    local current_line = ""
+    local words = {}
+
+    -- Split text into words, handling spaces and newlines
+    for word in text:gmatch("%S+") do
+        table.insert(words, word)
+    end
+
+    local i = 1
+    while i <= #words do
+        local word = words[i]
+        -- Check if adding the word to the current line exceeds max_chars_per_line
+        if #current_line == 0 then
+            -- If the current line is empty, just add the word
+            current_line = word
+        elseif #current_line + 1 + #word <= max_chars_per_line then
+            -- If the word fits, add it with a space
+            current_line = current_line .. " " .. word
+        else
+            -- If it doesn't fit, start a new line
+            table.insert(lines, current_line)
+            current_line = word
+        end
+        i = i + 1
+    end
+
+    -- Add the last line if it's not empty
+    if #current_line > 0 then
+        table.insert(lines, current_line)
+    end
+
+    return lines
 end
 
 --------------------------------------------------------------------------------
@@ -491,12 +548,13 @@ function Game.update()
     for _, npc in ipairs(currentScreenData.npcs) do
       if math.abs(State.player.x - npc.x) < 12 and math.abs(State.player.y - npc.y) < 12 then
         State.active_entity = npc
-        State.dialog_text = npc.name
+        State.dialog_text = ""
         State.game_state = GAME_STATE_DIALOG
+        State.showing_description = false
         State.dialog_menu_items = {
           {label = "Talk to", action = NpcActions.talk_to},
           {label = "Fight", action = NpcActions.fight},
-          {label = "Goodbye", action = NpcActions.goodbye}
+          {label = "Go back", action = NpcActions.go_back}
         }
         State.selected_dialog_menu_item = 1
         interaction_found = true
@@ -509,13 +567,14 @@ function Game.update()
       for _, item in ipairs(currentScreenData.items) do
         if math.abs(State.player.x - item.x) < 8 and math.abs(State.player.y - item.y) < 8 then
           State.active_entity = item
-          State.dialog_text = item.name
+          State.dialog_text = ""
           State.game_state = GAME_STATE_DIALOG
+          State.showing_description = false
           State.dialog_menu_items = {
             {label = "Use", action = ItemActions.use},
             {label = "Look at", action = ItemActions.look_at},
             {label = "Put away", action = ItemActions.put_away},
-            {label = "Goodbye", action = ItemActions.goodbye}
+            {label = "Go back", action = ItemActions.go_back_from_item_dialog}
           }
           State.selected_dialog_menu_item = 1
           interaction_found = true
@@ -532,17 +591,25 @@ function Game.update()
 end
 
 function Game.update_dialog()
-  State.selected_dialog_menu_item = UI.update_menu(State.dialog_menu_items, State.selected_dialog_menu_item)
-
-  if Input.action() then
-    local selected_item = State.dialog_menu_items[State.selected_dialog_menu_item]
-    if selected_item and selected_item.action then
-      selected_item.action()
+  if State.showing_description then
+    if Input.action() or Input.back() then
+      State.showing_description = false
+      State.dialog_text = "" -- Clear the description text
+      -- No need to change game_state, as it remains in GAME_STATE_DIALOG or GAME_STATE_INVENTORY_ACTION
     end
-  end
-  
-  if Input.back() then
-    State.game_state = GAME_STATE_GAME
+  else
+    State.selected_dialog_menu_item = UI.update_menu(State.dialog_menu_items, State.selected_dialog_menu_item)
+
+    if Input.action() then
+      local selected_item = State.dialog_menu_items[State.selected_dialog_menu_item]
+      if selected_item and selected_item.action then
+        selected_item.action()
+      end
+    end
+    
+    if Input.back() then
+      State.game_state = GAME_STATE_GAME
+    end
   end
 end
 
