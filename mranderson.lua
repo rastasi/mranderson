@@ -782,17 +782,13 @@ function Player.update()
 end
 
 function GameWindow.update()
-
   Player.update() -- Call the encapsulated player update logic
-
 end
 
 function GameWindow.set_state(new_state)
   Context.active_window = new_state
   -- Add any state-specific initialization/cleanup here later if needed
 end
-
-
 
 function PopupWindow.set_dialog_node(node_key)
   local npc = Context.dialog.active_entity
@@ -894,8 +890,8 @@ local STATE_HANDLERS = {
   end,
   [WINDOW_POPUP] = function()
     GameWindow.draw() -- Draw game behind dialog
-    PopupWindow.draw()
     PopupWindow.update()
+    PopupWindow.draw()
   end,
   [WINDOW_INVENTORY] = function()
     InventoryWindow.update()
