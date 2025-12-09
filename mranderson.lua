@@ -84,8 +84,14 @@ local State = {
     text = "Mr. Anderson is an average\nprogrammer. His daily life\nrevolves around debugging,\npull requests, and end-of-sprint\nmeetings, all while secretly\ndreaming of being destined\nfor something more."
   },
   current_screen = 1,
-  dialog_text = "",
   splash_timer = Config.timing.splash_duration,
+  dialog = {
+    text = "",
+    menu_items = {},
+    selected_menu_item = 1,
+    active_entity = nil,
+    showing_description = false
+  },
   player = {
     x = Config.player.start_x,
     y = Config.player.start_y,
@@ -105,9 +111,6 @@ local State = {
   menu_items = {},
   selected_menu_item = 1,
   selected_inventory_item = 1,
-  dialog_menu_items = {},
-  selected_dialog_menu_item = 1,
-  active_entity = nil,
   -- Screen data
   screens = {
     { -- Screen 1
@@ -323,20 +326,20 @@ end
 -- Item Actions
 --------------------------------------------------------------------------------
 function ItemActions.use()
-  print("Used item: " .. State.active_entity.name)
+  print("Used item: " .. State.dialog.active_entity.name)
   GameState.set_state(GAME_STATE_INVENTORY)
 end
 function ItemActions.look_at()
-  DialogState.show_description_dialog(State.active_entity, State.active_entity.desc)
+  DialogState.show_description_dialog(State.dialog.active_entity, State.dialog.active_entity.desc)
 end
 function ItemActions.put_away()
   -- Add item to inventory
-  table.insert(State.inventory, State.active_entity)
+  table.insert(State.inventory, State.dialog.active_entity)
 
   -- Remove item from screen
   local currentScreenData = State.screens[State.current_screen]
   for i, item in ipairs(currentScreenData.items) do
-    if item == State.active_entity then
+    if item == State.dialog.active_entity then
       table.remove(currentScreenData.items, i)
       break
     end
@@ -356,7 +359,7 @@ end
 function ItemActions.drop()
   -- Remove item from inventory
   for i, item in ipairs(State.inventory) do
-    if item == State.active_entity then
+    if item == State.dialog.active_entity then
       table.remove(State.inventory, i)
       break
     end
@@ -364,9 +367,9 @@ function ItemActions.drop()
 
   -- Add item to screen
   local currentScreenData = State.screens[State.current_screen]
-	State.active_entity.x = State.player.x
-	State.active_entity.y = State.player.y
-  table.insert(currentScreenData.items, State.active_entity)
+	State.dialog.active_entity.x = State.player.x
+	State.dialog.active_entity.y = State.player.y
+  table.insert(currentScreenData.items, State.dialog.active_entity)
 
   -- Go back to inventory
   GameState.set_state(GAME_STATE_INVENTORY)
@@ -402,12 +405,12 @@ function DialogState.draw()
   rectb(40, 40, 160, 80, Config.colors.green)
 
   -- Display the entity's name as the dialog title
-  if State.active_entity and State.active_entity.name then
-    print(State.active_entity.name, 120 - #State.active_entity.name * 2, 45, Config.colors.green)
+  if State.dialog.active_entity and State.dialog.active_entity.name then
+    print(State.dialog.active_entity.name, 120 - #State.dialog.active_entity.name * 2, 45, Config.colors.green)
   end
 
   -- Display the dialog content (description for "look at", or initial name/dialog for others)
-  local wrapped_lines = UI.word_wrap(State.dialog_text, 25) -- Max 25 chars per line
+  local wrapped_lines = UI.word_wrap(State.dialog.text, 25) -- Max 25 chars per line
   local current_y = 55 -- Starting Y position for the first line of content
   for _, line in ipairs(wrapped_lines) do
     print(line, 50, current_y, Config.colors.light_grey)
@@ -415,8 +418,8 @@ function DialogState.draw()
   end
   
   -- Adjust menu position based on the number of wrapped lines
-  if not State.showing_description then
-    UI.draw_menu(State.dialog_menu_items, State.selected_dialog_menu_item, 50, current_y + 2)
+  if not State.dialog.showing_description then
+    UI.draw_menu(State.dialog.menu_items, State.dialog.selected_menu_item, 50, current_y + 2)
   else
     -- If description is showing, provide a "Go back" option automatically, or close dialog on action
     -- For now, let's just make it implicitly wait for Input.menu_confirm() or Input.menu_back() to close
@@ -456,7 +459,7 @@ function UI.word_wrap(text, max_chars_per_line)
     local segments = {}
 
     -- Split the input text by explicit newline characters first
-    for segment in text:gmatch("([^\n]*)\n?") do
+    for segment in text:gmatch("([^\\n]*)\\n?") do
         table.insert(segments, segment)
     end
     
@@ -563,7 +566,7 @@ end
 --------------------------------------------------------------------------------
 function GameState.draw()
   local currentScreenData = State.screens[State.current_screen]
-  
+
   cls(Config.colors.dark_grey)
   UI.draw_top_bar(currentScreenData.name)
 
@@ -576,7 +579,7 @@ function GameState.draw()
   for _, item in ipairs(currentScreenData.items) do
     spr(item.sprite_id, item.x, item.y, 0)
   end
-  
+
   -- Draw NPCs
   for _, npc in ipairs(currentScreenData.npcs) do
     spr(npc.sprite_id, npc.x, npc.y, 0)
@@ -702,17 +705,17 @@ end
 
 
 function DialogState.update()
-  if State.showing_description then
+  if State.dialog.showing_description then
     if Input.menu_confirm() or Input.menu_back() then
-      State.showing_description = false
-      State.dialog_text = "" -- Clear the description text
+      State.dialog.showing_description = false
+      State.dialog.text = "" -- Clear the description text
       -- No need to change game_state, as it remains in GAME_STATE_DIALOG or GAME_STATE_INVENTORY_ACTION
     end
   else
-    State.selected_dialog_menu_item = UI.update_menu(State.dialog_menu_items, State.selected_dialog_menu_item)
+    State.dialog.selected_menu_item = UI.update_menu(State.dialog.menu_items, State.dialog.selected_menu_item)
 
     if Input.menu_confirm() then
-      local selected_item = State.dialog_menu_items[State.selected_dialog_menu_item]
+      local selected_item = State.dialog.menu_items[State.dialog.selected_menu_item]
       if selected_item and selected_item.action then
         selected_item.action()
       end
@@ -725,19 +728,19 @@ function DialogState.update()
 end
 
 function DialogState.show_menu_dialog(entity, menu_items, dialog_game_state)
-  State.active_entity = entity
-  State.dialog_text = "" -- Initial dialog text is empty, name is title
+  State.dialog.active_entity = entity
+  State.dialog.text = "" -- Initial dialog text is empty, name is title
   GameState.set_state(dialog_game_state or GAME_STATE_DIALOG)
-  State.showing_description = false
-  State.dialog_menu_items = menu_items
-  State.selected_dialog_menu_item = 1
+  State.dialog.showing_description = false
+  State.dialog.menu_items = menu_items
+  State.dialog.selected_menu_item = 1
 end
 
 function DialogState.show_description_dialog(entity, description_text)
-  State.active_entity = entity
-  State.dialog_text = description_text
+  State.dialog.active_entity = entity
+  State.dialog.text = description_text
   GameState.set_state(GAME_STATE_DIALOG)
-  State.showing_description = true
+  State.dialog.showing_description = true
   -- No menu items needed for description dialog
 end
 
@@ -814,4 +817,3 @@ end
 -- <PALETTE>
 -- 000:1a1c2c5d275db13e53ef7d57ffcd75a7f07038b76425717929366f3b5dc941a6f673eff7f4f4f494b0c2566c86333c57
 -- </PALETTE>
-
