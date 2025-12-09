@@ -56,17 +56,20 @@ local GAME_STATE_INVENTORY_ACTION = 6
 --------------------------------------------------------------------------------
 -- Modules
 --------------------------------------------------------------------------------
+-- State Modules (in GAME_STATE order)
 local SplashState = {}
 local IntroState = {}
 local MenuState = {}
 local GameState = {}
+local DialogState = {}    -- Used for GAME_STATE_DIALOG and GAME_STATE_INVENTORY_ACTION
+local InventoryState = {} -- Used for GAME_STATE_INVENTORY
+
+-- Other Modules
 local UI = {}
 local Input = {}
-local InventoryState = {}
 local NpcActions = {}
 local ItemActions = {}
 local MenuActions = {}
-local DialogState = {}
 local Player = {}
 
 --------------------------------------------------------------------------------
