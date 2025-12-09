@@ -341,7 +341,6 @@ local State = {
 -- Inventory Module
 --------------------------------------------------------------------------------
 function InventoryState.draw()
-  cls(Config.colors.dark_grey)
   UI.draw_top_bar("Inventory")
 
   if #State.inventory == 0 then
@@ -595,7 +594,6 @@ end
 -- Splash Module
 --------------------------------------------------------------------------------
 function SplashState.draw()
-  cls(Config.colors.dark_grey)
   print("Mr. Anderson's", 78, 60, Config.colors.green)
   print("Addventure", 90, 70, Config.colors.green)
 end
@@ -611,7 +609,6 @@ end
 -- Intro Module
 --------------------------------------------------------------------------------
 function IntroState.draw()
-  cls(Config.colors.dark_grey)
   local x = (Config.screen.width - 132) / 2 -- Centered text
   print(State.intro.text, x, State.intro.y, Config.colors.green)
 end
@@ -640,7 +637,6 @@ end
 -- Menu Module
 --------------------------------------------------------------------------------
 function MenuState.draw()
-  cls(Config.colors.dark_grey)
   UI.draw_top_bar("Main Menu")
   UI.draw_menu(State.menu_items, State.selected_menu_item, 108, 70)
 end
@@ -662,7 +658,6 @@ end
 function GameState.draw()
   local currentScreenData = State.screens[State.current_screen]
 
-  cls(Config.colors.dark_grey)
   UI.draw_top_bar(currentScreenData.name)
 
   -- Draw platforms
@@ -914,6 +909,7 @@ local STATE_HANDLERS = {
 }
 
 function TIC()
+  cls(Config.colors.black)
   local handler = STATE_HANDLERS[State.game_state]
   if handler then
     handler()
