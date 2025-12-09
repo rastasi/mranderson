@@ -113,43 +113,134 @@ local State = {
     { -- Screen 1
       name = "Screen 1",
       platforms = {
-        {x = 80, y = 110, w = 40, h = 8},
-        {x = 160, y = 90, w = 40, h = 8}
+        {
+          x = 80,
+          y = 110,
+          w = 40,
+          h = 8
+        },
+        {
+          x = 160,
+          y = 90,
+          w = 40,
+          h = 8
+        }
       },
       npcs = {
-        {x = 180, y = 82, name = "Trinity", sprite_id = 2},
-        {x = 90, y = 102, name = "Oracle", sprite_id = 3}
+        {
+          x = 180,
+          y = 82,
+          name = "Trinity",
+          sprite_id = 2
+        },
+        {
+          x = 90,
+          y = 102,
+          name = "Oracle",
+          sprite_id = 3
+        }
       },
       items = {
-        {x = 100, y = 128, w=8, h=8, name = "Key", sprite_id = 4, desc = "A rusty old key. It might open something."}
+        {
+          x = 100,
+          y = 128,
+          w = 8,
+          h = 8,
+          name = "Key",
+          sprite_id = 4,
+          desc = "A rusty old key. It might open something."
+        }
       }
     },
     { -- Screen 2
       name = "Screen 2",
       platforms = {
-        {x = 30, y = 100, w = 50, h = 8},
-        {x = 100, y = 80, w = 50, h = 8},
-        {x = 170, y = 60, w = 50, h = 8}
+        {
+          x = 30,
+          y = 100,
+          w = 50,
+          h = 8
+        },
+        {
+          x = 100,
+          y = 80,
+          w = 50,
+          h = 8
+        },
+        {
+          x = 170,
+          y = 60,
+          w = 50,
+          h = 8
+        }
       },
       npcs = {
-        {x = 120, y = 72, name = "Morpheus", sprite_id = 5},
-        {x = 40, y = 92, name = "Tank", sprite_id = 6}
+        {
+          x = 120,
+          y = 72,
+          name = "Morpheus",
+          sprite_id = 5
+        },
+        {
+          x = 40,
+          y = 92,
+          name = "Tank",
+          sprite_id = 6
+        }
       },
       items = {
-        {x = 180, y = 52, w=8, h=8, name = "Potion", sprite_id = 7, desc = "A glowing red potion. It looks potent."}
+        {
+          x = 180,
+          y = 52,
+          w = 8,
+          h = 8,
+          name = "Potion",
+          sprite_id = 7,
+          desc = "A glowing red potion. It looks potent."
+        }
       }
     },
     { -- Screen 3
       name = "Screen 3",
       platforms = {
-        {x = 50, y = 110, w = 30, h = 8},
-        {x = 100, y = 90, w = 30, h = 8},
-        {x = 150, y = 70, w = 30, h = 8},
-        {x = 200, y = 50, w = 30, h = 8}
+        {
+          x = 50,
+          y = 110,
+          w = 30,
+          h = 8
+        },
+        {
+          x = 100,
+          y = 90,
+          w = 30,
+          h = 8
+        },
+        {
+          x = 150,
+          y = 70,
+          w = 30,
+          h = 8
+        },
+        {
+          x = 200,
+          y = 50,
+          w = 30,
+          h = 8
+        }
       },
       npcs = {
-        {x = 210, y = 42, name = "Agent Smith", sprite_id = 8},
-        {x = 160, y = 62, name = "Cypher", sprite_id = 9}
+        {
+          x = 210,
+          y = 42,
+          name = "Agent Smith",
+          sprite_id = 8
+        },
+        {
+          x = 160,
+          y = 62,
+          name = "Cypher",
+          sprite_id = 9
+        }
       },
       items = {}
     }
