@@ -34,6 +34,8 @@ local Config = {
     jump_power = -5,
     move_speed = 1.5,
     max_jumps = 2,
+    interaction_radius_npc = 12, -- New constant
+    interaction_radius_item = 8   -- New constant
   },
   timing = {
     splash_duration = 120 -- 2 seconds at 60fps
@@ -65,6 +67,7 @@ local NpcActions = {}
 local ItemActions = {}
 local MenuActions = {}
 local DialogState = {}
+local Player = {}
 
 --------------------------------------------------------------------------------
 -- Game State
@@ -175,6 +178,7 @@ function InventoryState.update()
   State.selected_inventory_item = UI.update_menu(State.inventory, State.selected_inventory_item)
 
   if Input.menu_confirm() and #State.inventory > 0 then
+    local selected_item = State.inventory[State.selected_inventory_item]
     DialogState.show_menu_dialog(selected_item, {
       {label = "Use", action = ItemActions.use},
       {label = "Drop", action = ItemActions.drop},
@@ -184,7 +188,7 @@ function InventoryState.update()
   end
 
   if Input.menu_back() then
-    State.game_state = GAME_STATE_GAME
+    GameState.set_state(GAME_STATE_GAME)
   end
 end
 
@@ -199,7 +203,7 @@ function MenuActions.play()
   State.player.vy = 0
   State.player.jumps = 0
   State.current_screen = 1
-  State.game_state = GAME_STATE_GAME
+  GameState.set_state(GAME_STATE_GAME)
 end
 
 function MenuActions.exit()
@@ -218,7 +222,7 @@ State.menu_items = {
 function NpcActions.talk_to() end
 function NpcActions.fight() end
 function NpcActions.go_back()
-  State.game_state = GAME_STATE_GAME
+  GameState.set_state(GAME_STATE_GAME)
 end
 
 --------------------------------------------------------------------------------
@@ -226,7 +230,7 @@ end
 --------------------------------------------------------------------------------
 function ItemActions.use()
   print("Used item: " .. State.active_entity.name)
-  State.game_state = GAME_STATE_INVENTORY
+  GameState.set_state(GAME_STATE_INVENTORY)
 end
 function ItemActions.look_at()
   DialogState.show_description_dialog(State.active_entity, State.active_entity.desc)
@@ -245,14 +249,14 @@ function ItemActions.put_away()
   end
 
   -- Go back to game
-  State.game_state = GAME_STATE_GAME
+  GameState.set_state(GAME_STATE_GAME)
 end
 function ItemActions.go_back_from_item_dialog()
-  State.game_state = GAME_STATE_GAME
+  GameState.set_state(GAME_STATE_GAME)
 end
 
 function ItemActions.go_back_from_inventory_action()
-	State.game_state = GAME_STATE_GAME
+	GameState.set_state(GAME_STATE_GAME)
 end
 
 function ItemActions.drop()
@@ -271,7 +275,7 @@ function ItemActions.drop()
   table.insert(currentScreenData.items, State.active_entity)
 
   -- Go back to inventory
-  State.game_state = GAME_STATE_INVENTORY
+  GameState.set_state(GAME_STATE_INVENTORY)
 end
 
 
@@ -304,7 +308,9 @@ function DialogState.draw()
   rectb(40, 40, 160, 80, Config.colors.green)
 
   -- Display the entity's name as the dialog title
-  print(State.active_entity.name, 120 - #State.active_entity.name * 2, 45, Config.colors.green)
+  if State.active_entity and State.active_entity.name then
+    print(State.active_entity.name, 120 - #State.active_entity.name * 2, 45, Config.colors.green)
+  end
 
   -- Display the dialog content (description for "look at", or initial name/dialog for others)
   local wrapped_lines = UI.word_wrap(State.dialog_text, 25) -- Max 25 chars per line
@@ -352,39 +358,45 @@ function UI.update_menu(items, selected_item)
 end
 
 function UI.word_wrap(text, max_chars_per_line)
-    local lines = {}
-    local current_line = ""
-    local words = {}
+    local result_lines = {}
+    local segments = {}
 
-    -- Split text into words, handling spaces and newlines
-    for word in text:gmatch("%S+") do
-        table.insert(words, word)
+    -- Split the input text by explicit newline characters first
+    for segment in text:gmatch("([^\n]*)\n?") do
+        table.insert(segments, segment)
     end
+    
+    -- Process each segment for word wrapping
+    for _, segment_text in ipairs(segments) do
+        local current_line = ""
+        local words = {}
 
-    local i = 1
-    while i <= #words do
-        local word = words[i]
-        -- Check if adding the word to the current line exceeds max_chars_per_line
-        if #current_line == 0 then
-            -- If the current line is empty, just add the word
-            current_line = word
-        elseif #current_line + 1 + #word <= max_chars_per_line then
-            -- If the word fits, add it with a space
-            current_line = current_line .. " " .. word
-        else
-            -- If it doesn't fit, start a new line
-            table.insert(lines, current_line)
-            current_line = word
+        -- Split segment into words
+        for word in segment_text:gmatch("%S+") do
+            table.insert(words, word)
         end
-        i = i + 1
+
+        local i = 1
+        while i <= #words do
+            local word = words[i]
+            if #current_line == 0 then
+                current_line = word
+            elseif #current_line + 1 + #word <= max_chars_per_line then
+                current_line = current_line .. " " .. word
+            else
+                table.insert(result_lines, current_line)
+                current_line = word
+            end
+            i = i + 1
+        end
+
+        -- Add the last line of the segment if not empty
+        if #current_line > 0 then
+            table.insert(result_lines, current_line)
+        end
     end
 
-    -- Add the last line if it's not empty
-    if #current_line > 0 then
-        table.insert(lines, current_line)
-    end
-
-    return lines
+    return result_lines
 end
 
 --------------------------------------------------------------------------------
@@ -399,7 +411,7 @@ end
 function SplashState.update()
   State.splash_timer = State.splash_timer - 1
   if State.splash_timer <= 0 or Input.menu_confirm() then
-    State.game_state = GAME_STATE_INTRO
+    GameState.set_state(GAME_STATE_INTRO)
   end
 end
 
@@ -423,12 +435,12 @@ function IntroState.update()
 
   -- When text is off-screen, go to menu
   if State.intro.y < -lines * 8 then
-    State.game_state = GAME_STATE_MENU
+    GameState.set_state(GAME_STATE_MENU)
   end
 
   -- Skip intro by pressing A
   if Input.menu_confirm() then
-    State.game_state = GAME_STATE_MENU
+    GameState.set_state(GAME_STATE_MENU)
   end
 end
 
@@ -480,10 +492,14 @@ function GameState.draw()
   rect(State.ground.x, State.ground.y, State.ground.w, State.ground.h, Config.colors.dark_grey)
 
   -- Draw player
+  Player.draw()
+end
+
+function Player.draw()
   spr(State.player.sprite_id, State.player.x, State.player.y, 0)
 end
 
-function GameState.update()
+function Player.update()
   -- Handle input
   if Input.left() then
     State.player.vx = -Config.physics.move_speed
@@ -544,7 +560,7 @@ function GameState.update()
     local interaction_found = false
     -- NPC interaction
     for _, npc in ipairs(currentScreenData.npcs) do
-      if math.abs(State.player.x - npc.x) < 12 and math.abs(State.player.y - npc.y) < 12 then
+      if math.abs(State.player.x - npc.x) < Config.physics.interaction_radius_npc and math.abs(State.player.y - npc.y) < Config.physics.interaction_radius_npc then
         DialogState.show_menu_dialog(npc, {
           {label = "Talk to", action = NpcActions.talk_to},
           {label = "Fight", action = NpcActions.fight},
@@ -558,7 +574,7 @@ function GameState.update()
     if not interaction_found then
       -- Item interaction
       for _, item in ipairs(currentScreenData.items) do
-        if math.abs(State.player.x - item.x) < 8 and math.abs(State.player.y - item.y) < 8 then
+        if math.abs(State.player.x - item.x) < Config.physics.interaction_radius_item and math.abs(State.player.y - item.y) < Config.physics.interaction_radius_item then
           DialogState.show_menu_dialog(item, {
             {label = "Use", action = ItemActions.use},
             {label = "Look at", action = ItemActions.look_at},
@@ -573,9 +589,20 @@ function GameState.update()
 
     -- If no interaction happened, open inventory
     if not interaction_found then
-      State.game_state = GAME_STATE_INVENTORY
+      GameState.set_state(GAME_STATE_INVENTORY)
     end
   end
+end
+
+function GameState.update()
+
+  Player.update() -- Call the encapsulated player update logic
+
+end
+
+function GameState.set_state(new_state)
+  State.game_state = new_state
+  -- Add any state-specific initialization/cleanup here later if needed
 end
 
 
@@ -598,7 +625,7 @@ function DialogState.update()
     end
     
     if Input.menu_back() then
-      State.game_state = GAME_STATE_GAME
+      GameState.set_state(GAME_STATE_GAME)
     end
   end
 end
@@ -606,7 +633,7 @@ end
 function DialogState.show_menu_dialog(entity, menu_items, dialog_game_state)
   State.active_entity = entity
   State.dialog_text = "" -- Initial dialog text is empty, name is title
-  State.game_state = dialog_game_state or GAME_STATE_DIALOG
+  GameState.set_state(dialog_game_state or GAME_STATE_DIALOG)
   State.showing_description = false
   State.dialog_menu_items = menu_items
   State.selected_dialog_menu_item = 1
@@ -615,7 +642,7 @@ end
 function DialogState.show_description_dialog(entity, description_text)
   State.active_entity = entity
   State.dialog_text = description_text
-  State.game_state = GAME_STATE_DIALOG -- Or GAME_STATE_INVENTORY_ACTION depending on context, but GAME_STATE_DIALOG is fine for now
+  GameState.set_state(GAME_STATE_DIALOG)
   State.showing_description = true
   -- No menu items needed for description dialog
 end
