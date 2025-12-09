@@ -75,7 +75,7 @@ local Player = {}
 --------------------------------------------------------------------------------
 -- Game State
 --------------------------------------------------------------------------------
-local State = {
+local Context = {
   game_state = GAME_STATE_SPLASH,
   inventory = {},
   intro = {
@@ -343,12 +343,12 @@ local State = {
 function InventoryState.draw()
   UI.draw_top_bar("Inventory")
 
-  if #State.inventory == 0 then
+  if #Context.inventory == 0 then
     print("Inventory is empty.", 70, 70, Config.colors.light_grey)
   else
-    for i, item in ipairs(State.inventory) do
+    for i, item in ipairs(Context.inventory) do
 			local color = Config.colors.light_grey
-			if i == State.selected_inventory_item then
+			if i == Context.selected_inventory_item then
 				color = Config.colors.green
 				print(">", 60, 20 + i * 10, color)
 			end
@@ -358,10 +358,10 @@ function InventoryState.draw()
 end
 
 function InventoryState.update()
-  State.selected_inventory_item = UI.update_menu(State.inventory, State.selected_inventory_item)
+  Context.selected_inventory_item = UI.update_menu(Context.inventory, Context.selected_inventory_item)
 
-  if Input.menu_confirm() and #State.inventory > 0 then
-    local selected_item = State.inventory[State.selected_inventory_item]
+  if Input.menu_confirm() and #Context.inventory > 0 then
+    local selected_item = Context.inventory[Context.selected_inventory_item]
     PopupState.show_menu_dialog(selected_item, {
       {label = "Use", action = ItemActions.use},
       {label = "Drop", action = ItemActions.drop},
@@ -380,12 +380,12 @@ end
 --------------------------------------------------------------------------------
 function MenuActions.play()
   -- Reset player state and screen for a new game
-  State.player.x = Config.player.start_x
-  State.player.y = Config.player.start_y
-  State.player.vx = 0
-  State.player.vy = 0
-  State.player.jumps = 0
-  State.current_screen = 1
+  Context.player.x = Config.player.start_x
+  Context.player.y = Config.player.start_y
+  Context.player.vx = 0
+  Context.player.vy = 0
+  Context.player.jumps = 0
+  Context.current_screen = 1
   GameState.set_state(GAME_STATE_GAME)
 end
 
@@ -394,7 +394,7 @@ function MenuActions.exit()
 end
 
 -- Initialize menu items after actions are defined
-State.menu_items = {
+Context.menu_items = {
   {label = "Play", action = MenuActions.play},
   {label = "Exit", action = MenuActions.exit}
 }
@@ -403,7 +403,7 @@ State.menu_items = {
 -- NPC Actions
 --------------------------------------------------------------------------------
 function NpcActions.talk_to()
-  local npc = State.dialog.active_entity
+  local npc = Context.dialog.active_entity
   if npc.dialog and npc.dialog.start then
     PopupState.set_dialog_node("start")
   else
@@ -420,20 +420,20 @@ end
 -- Item Actions
 --------------------------------------------------------------------------------
 function ItemActions.use()
-  print("Used item: " .. State.dialog.active_entity.name)
+  print("Used item: " .. Context.dialog.active_entity.name)
   GameState.set_state(GAME_STATE_INVENTORY)
 end
 function ItemActions.look_at()
-  PopupState.show_description_dialog(State.dialog.active_entity, State.dialog.active_entity.desc)
+  PopupState.show_description_dialog(Context.dialog.active_entity, Context.dialog.active_entity.desc)
 end
 function ItemActions.put_away()
   -- Add item to inventory
-  table.insert(State.inventory, State.dialog.active_entity)
+  table.insert(Context.inventory, Context.dialog.active_entity)
 
   -- Remove item from screen
-  local currentScreenData = State.screens[State.current_screen]
+  local currentScreenData = Context.screens[Context.current_screen]
   for i, item in ipairs(currentScreenData.items) do
-    if item == State.dialog.active_entity then
+    if item == Context.dialog.active_entity then
       table.remove(currentScreenData.items, i)
       break
     end
@@ -452,18 +452,18 @@ end
 
 function ItemActions.drop()
   -- Remove item from inventory
-  for i, item in ipairs(State.inventory) do
-    if item == State.dialog.active_entity then
-      table.remove(State.inventory, i)
+  for i, item in ipairs(Context.inventory) do
+    if item == Context.dialog.active_entity then
+      table.remove(Context.inventory, i)
       break
     end
   end
 
   -- Add item to screen
-  local currentScreenData = State.screens[State.current_screen]
-	State.dialog.active_entity.x = State.player.x
-	State.dialog.active_entity.y = State.player.y
-  table.insert(currentScreenData.items, State.dialog.active_entity)
+  local currentScreenData = Context.screens[Context.current_screen]
+	Context.dialog.active_entity.x = Context.player.x
+	Context.dialog.active_entity.y = Context.player.y
+  table.insert(currentScreenData.items, Context.dialog.active_entity)
 
   -- Go back to inventory
   GameState.set_state(GAME_STATE_INVENTORY)
@@ -499,12 +499,12 @@ function PopupState.draw()
   rectb(40, 40, 160, 80, Config.colors.green)
 
   -- Display the entity's name as the dialog title
-  if State.dialog.active_entity and State.dialog.active_entity.name then
-    print(State.dialog.active_entity.name, 120 - #State.dialog.active_entity.name * 2, 45, Config.colors.green)
+  if Context.dialog.active_entity and Context.dialog.active_entity.name then
+    print(Context.dialog.active_entity.name, 120 - #Context.dialog.active_entity.name * 2, 45, Config.colors.green)
   end
 
   -- Display the dialog content (description for "look at", or initial name/dialog for others)
-  local wrapped_lines = UI.word_wrap(State.dialog.text, 25) -- Max 25 chars per line
+  local wrapped_lines = UI.word_wrap(Context.dialog.text, 25) -- Max 25 chars per line
   local current_y = 55 -- Starting Y position for the first line of content
   for _, line in ipairs(wrapped_lines) do
     print(line, 50, current_y, Config.colors.light_grey)
@@ -512,8 +512,8 @@ function PopupState.draw()
   end
   
   -- Adjust menu position based on the number of wrapped lines
-  if not State.dialog.showing_description then
-    UI.draw_menu(State.dialog.menu_items, State.dialog.selected_menu_item, 50, current_y + 2)
+  if not Context.dialog.showing_description then
+    UI.draw_menu(Context.dialog.menu_items, Context.dialog.selected_menu_item, 50, current_y + 2)
   else
     -- If description is showing, provide a "Go back" option automatically, or close dialog on action
     -- For now, let's just make it implicitly wait for Input.menu_confirm() or Input.menu_back() to close
@@ -599,8 +599,8 @@ function SplashState.draw()
 end
 
 function SplashState.update()
-  State.splash_timer = State.splash_timer - 1
-  if State.splash_timer <= 0 or Input.menu_confirm() then
+  Context.splash_timer = Context.splash_timer - 1
+  if Context.splash_timer <= 0 or Input.menu_confirm() then
     GameState.set_state(GAME_STATE_INTRO)
   end
 end
@@ -610,20 +610,20 @@ end
 --------------------------------------------------------------------------------
 function IntroState.draw()
   local x = (Config.screen.width - 132) / 2 -- Centered text
-  print(State.intro.text, x, State.intro.y, Config.colors.green)
+  print(Context.intro.text, x, Context.intro.y, Config.colors.green)
 end
 
 function IntroState.update()
-  State.intro.y = State.intro.y - State.intro.speed
+  Context.intro.y = Context.intro.y - Context.intro.speed
 
   -- Count lines in intro text to determine when scrolling is done
   local lines = 1
-  for _ in string.gmatch(State.intro.text, "\n") do
+  for _ in string.gmatch(Context.intro.text, "\n") do
     lines = lines + 1
   end
 
   -- When text is off-screen, go to menu
-  if State.intro.y < -lines * 8 then
+  if Context.intro.y < -lines * 8 then
     GameState.set_state(GAME_STATE_MENU)
   end
 
@@ -638,14 +638,14 @@ end
 --------------------------------------------------------------------------------
 function MenuState.draw()
   UI.draw_top_bar("Main Menu")
-  UI.draw_menu(State.menu_items, State.selected_menu_item, 108, 70)
+  UI.draw_menu(Context.menu_items, Context.selected_menu_item, 108, 70)
 end
 
 function MenuState.update()
-  State.selected_menu_item = UI.update_menu(State.menu_items, State.selected_menu_item)
+  Context.selected_menu_item = UI.update_menu(Context.menu_items, Context.selected_menu_item)
 
   if Input.menu_confirm() then
-    local selected_item = State.menu_items[State.selected_menu_item]
+    local selected_item = Context.menu_items[Context.selected_menu_item]
     if selected_item and selected_item.action then
       selected_item.action()
     end
@@ -656,7 +656,7 @@ end
 -- Game Module
 --------------------------------------------------------------------------------
 function GameState.draw()
-  local currentScreenData = State.screens[State.current_screen]
+  local currentScreenData = Context.screens[Context.current_screen]
 
   UI.draw_top_bar(currentScreenData.name)
 
@@ -676,70 +676,70 @@ function GameState.draw()
   end
 
   -- Draw ground
-  rect(State.ground.x, State.ground.y, State.ground.w, State.ground.h, Config.colors.dark_grey)
+  rect(Context.ground.x, Context.ground.y, Context.ground.w, Context.ground.h, Config.colors.dark_grey)
 
   -- Draw player
   Player.draw()
 end
 
 function Player.draw()
-  spr(State.player.sprite_id, State.player.x, State.player.y, 0)
+  spr(Context.player.sprite_id, Context.player.x, Context.player.y, 0)
 end
 
 function Player.update()
   -- Handle input
   if Input.left() then
-    State.player.vx = -Config.physics.move_speed
+    Context.player.vx = -Config.physics.move_speed
   elseif Input.right() then
-    State.player.vx = Config.physics.move_speed
+    Context.player.vx = Config.physics.move_speed
   else
-    State.player.vx = 0
+    Context.player.vx = 0
   end
 
-  if Input.player_jump() and State.player.jumps < Config.physics.max_jumps then
-    State.player.vy = Config.physics.jump_power
-    State.player.jumps = State.player.jumps + 1
+  if Input.player_jump() and Context.player.jumps < Config.physics.max_jumps then
+    Context.player.vy = Config.physics.jump_power
+    Context.player.jumps = Context.player.jumps + 1
   end
 
   -- Update player position
-  State.player.x = State.player.x + State.player.vx
-  State.player.y = State.player.y + State.player.vy
+  Context.player.x = Context.player.x + Context.player.vx
+  Context.player.y = Context.player.y + Context.player.vy
 
   -- Screen transition
-  if State.player.x > Config.screen.width - State.player.w then
-    if State.current_screen < #State.screens then
-      State.current_screen = State.current_screen + 1
-      State.player.x = 0
+  if Context.player.x > Config.screen.width - Context.player.w then
+    if Context.current_screen < #Context.screens then
+      Context.current_screen = Context.current_screen + 1
+      Context.player.x = 0
     else
-      State.player.x = Config.screen.width - State.player.w
+      Context.player.x = Config.screen.width - Context.player.w
     end
-  elseif State.player.x < 0 then
-    if State.current_screen > 1 then
-      State.current_screen = State.current_screen - 1
-      State.player.x = Config.screen.width - State.player.w
+  elseif Context.player.x < 0 then
+    if Context.current_screen > 1 then
+      Context.current_screen = Context.current_screen - 1
+      Context.player.x = Config.screen.width - Context.player.w
     else
-      State.player.x = 0
+      Context.player.x = 0
     end
   end
 
   -- Apply gravity
-  State.player.vy = State.player.vy + Config.physics.gravity
+  Context.player.vy = Context.player.vy + Config.physics.gravity
 
-  local currentScreenData = State.screens[State.current_screen]
+  local currentScreenData = Context.screens[Context.current_screen]
   -- Collision detection with platforms
   for _, p in ipairs(currentScreenData.platforms) do
-    if State.player.vy > 0 and State.player.y + State.player.h >= p.y and State.player.y + State.player.h <= p.y + p.h and State.player.x + State.player.w > p.x and State.player.x < p.x + p.w then
-      State.player.y = p.y - State.player.h
-      State.player.vy = 0
-      State.player.jumps = 0
+    if Context.player.vy > 0 and Context.player.y + Context.player.h >= p.y and Context.player.y + Context.player.h <= p.y + p.h and Context.player.x + Context.player.w > p.x and Context.player.x < p.x + p.w then
+      Context.player.y = p.y - Context.player.h
+      Context.player.vy = 0
+      Context.player.jumps = 0
     end
   end
 
   -- Collision detection with ground
-  if State.player.y + State.player.h > State.ground.y then
-    State.player.y = State.ground.y - State.player.h
-    State.player.vy = 0
-    State.player.jumps = 0
+  if Context.player.y + Context.player.h > Context.ground.y then
+    Context.player.y = Context.ground.y - Context.player.h
+    Context.player.vy = 0
+    Context.player.jumps = 0
   end
 
   -- Entity interaction
@@ -747,7 +747,7 @@ function Player.update()
     local interaction_found = false
     -- NPC interaction
     for _, npc in ipairs(currentScreenData.npcs) do
-      if math.abs(State.player.x - npc.x) < Config.physics.interaction_radius_npc and math.abs(State.player.y - npc.y) < Config.physics.interaction_radius_npc then
+      if math.abs(Context.player.x - npc.x) < Config.physics.interaction_radius_npc and math.abs(Context.player.y - npc.y) < Config.physics.interaction_radius_npc then
         PopupState.show_menu_dialog(npc, {
           {label = "Talk to", action = NpcActions.talk_to},
           {label = "Fight", action = NpcActions.fight},
@@ -761,7 +761,7 @@ function Player.update()
     if not interaction_found then
       -- Item interaction
       for _, item in ipairs(currentScreenData.items) do
-        if math.abs(State.player.x - item.x) < Config.physics.interaction_radius_item and math.abs(State.player.y - item.y) < Config.physics.interaction_radius_item then
+        if math.abs(Context.player.x - item.x) < Config.physics.interaction_radius_item and math.abs(Context.player.y - item.y) < Config.physics.interaction_radius_item then
           PopupState.show_menu_dialog(item, {
             {label = "Use", action = ItemActions.use},
             {label = "Look at", action = ItemActions.look_at},
@@ -788,23 +788,23 @@ function GameState.update()
 end
 
 function GameState.set_state(new_state)
-  State.game_state = new_state
+  Context.game_state = new_state
   -- Add any state-specific initialization/cleanup here later if needed
 end
 
 
 
 function PopupState.set_dialog_node(node_key)
-  local npc = State.dialog.active_entity
+  local npc = Context.dialog.active_entity
   local node = npc.dialog[node_key]
 
   if not node then
     GameState.set_state(GAME_STATE_GAME)
     return
   end
-  
-  State.dialog.current_node_key = node_key
-  State.dialog.text = node.text
+
+  Context.dialog.current_node_key = node_key
+  Context.dialog.text = node.text
 
   local menu_items = {}
   if node.options then
@@ -826,24 +826,24 @@ function PopupState.set_dialog_node(node_key)
       })
   end
 
-  State.dialog.menu_items = menu_items
-  State.dialog.selected_menu_item = 1
-  State.dialog.showing_description = false
+  Context.dialog.menu_items = menu_items
+  Context.dialog.selected_menu_item = 1
+  Context.dialog.showing_description = false
   GameState.set_state(GAME_STATE_POPUP)
 end
 
 function PopupState.update()
-  if State.dialog.showing_description then
+  if Context.dialog.showing_description then
     if Input.menu_confirm() or Input.menu_back() then
-      State.dialog.showing_description = false
-      State.dialog.text = "" -- Clear the description text
+      Context.dialog.showing_description = false
+      Context.dialog.text = "" -- Clear the description text
       -- No need to change game_state, as it remains in GAME_STATE_POPUP or GAME_STATE_INVENTORY_ACTION
     end
   else
-    State.dialog.selected_menu_item = UI.update_menu(State.dialog.menu_items, State.dialog.selected_menu_item)
+    Context.dialog.selected_menu_item = UI.update_menu(Context.dialog.menu_items, Context.dialog.selected_menu_item)
 
     if Input.menu_confirm() then
-      local selected_item = State.dialog.menu_items[State.dialog.selected_menu_item]
+      local selected_item = Context.dialog.menu_items[Context.dialog.selected_menu_item]
       if selected_item and selected_item.action then
         selected_item.action()
       end
@@ -856,19 +856,19 @@ function PopupState.update()
 end
 
 function PopupState.show_menu_dialog(entity, menu_items, dialog_game_state)
-  State.dialog.active_entity = entity
-  State.dialog.text = "" -- Initial dialog text is empty, name is title
+  Context.dialog.active_entity = entity
+  Context.dialog.text = "" -- Initial dialog text is empty, name is title
   GameState.set_state(dialog_game_state or GAME_STATE_POPUP)
-  State.dialog.showing_description = false
-  State.dialog.menu_items = menu_items
-  State.dialog.selected_menu_item = 1
+  Context.dialog.showing_description = false
+  Context.dialog.menu_items = menu_items
+  Context.dialog.selected_menu_item = 1
 end
 
 function PopupState.show_description_dialog(entity, description_text)
-  State.dialog.active_entity = entity
-  State.dialog.text = description_text
+  Context.dialog.active_entity = entity
+  Context.dialog.text = description_text
   GameState.set_state(GAME_STATE_POPUP)
-  State.dialog.showing_description = true
+  Context.dialog.showing_description = true
   -- No menu items needed for description dialog
 end
 
@@ -910,7 +910,7 @@ local STATE_HANDLERS = {
 
 function TIC()
   cls(Config.colors.black)
-  local handler = STATE_HANDLERS[State.game_state]
+  local handler = STATE_HANDLERS[Context.game_state]
   if handler then
     handler()
   end
