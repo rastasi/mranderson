@@ -43,26 +43,26 @@ local Config = {
 }
 
 --------------------------------------------------------------------------------
--- Game States
+-- Game Windows
 --------------------------------------------------------------------------------
-local GAME_STATE_SPLASH = 0
-local GAME_STATE_INTRO = 1
-local GAME_STATE_MENU = 2
-local GAME_STATE_GAME = 3
-local GAME_STATE_POPUP = 4
-local GAME_STATE_INVENTORY = 5
-local GAME_STATE_INVENTORY_ACTION = 6
+local WINDOW_SPLASH = 0
+local WINDOW_INTRO = 1
+local WINDOW_MENU = 2
+local WINDOW_GAME = 3
+local WINDOW_POPUP = 4
+local WINDOW_INVENTORY = 5
+local WINDOW_INVENTORY_ACTION = 6
 
 --------------------------------------------------------------------------------
 -- Modules
 --------------------------------------------------------------------------------
--- State Modules (in GAME_STATE order)
-local SplashState = {}
-local IntroState = {}
-local MenuState = {}
-local GameState = {}
-local PopupState = {}    -- Manages popups for GAME_STATE_POPUP and GAME_STATE_INVENTORY_ACTION
-local InventoryState = {} -- Used for GAME_STATE_INVENTORY
+-- Window Modules (in WINDOW order)
+local SplashWindow = {}
+local IntroWindow = {}
+local MenuWindow = {}
+local GameWindow = {}
+local PopupWindow = {}    -- Manages popups for WINDOW_POPUP and WINDOW_INVENTORY_ACTION
+local InventoryWindow = {} -- Used for WINDOW_INVENTORY
 
 -- Other Modules
 local UI = {}
@@ -73,10 +73,10 @@ local MenuActions = {}
 local Player = {}
 
 --------------------------------------------------------------------------------
--- Game State
+-- Game Window
 --------------------------------------------------------------------------------
 local Context = {
-  game_state = GAME_STATE_SPLASH,
+  active_window = WINDOW_SPLASH,
   inventory = {},
   intro = {
     y = Config.screen.height,
@@ -340,7 +340,7 @@ local Context = {
 --------------------------------------------------------------------------------
 -- Inventory Module
 --------------------------------------------------------------------------------
-function InventoryState.draw()
+function InventoryWindow.draw()
   UI.draw_top_bar("Inventory")
 
   if #Context.inventory == 0 then
@@ -357,21 +357,21 @@ function InventoryState.draw()
   end
 end
 
-function InventoryState.update()
+function InventoryWindow.update()
   Context.selected_inventory_item = UI.update_menu(Context.inventory, Context.selected_inventory_item)
 
   if Input.menu_confirm() and #Context.inventory > 0 then
     local selected_item = Context.inventory[Context.selected_inventory_item]
-    PopupState.show_menu_dialog(selected_item, {
+    PopupWindow.show_menu_dialog(selected_item, {
       {label = "Use", action = ItemActions.use},
       {label = "Drop", action = ItemActions.drop},
       {label = "Look at", action = ItemActions.look_at},
       {label = "Go back", action = ItemActions.go_back_from_inventory_action}
-    }, GAME_STATE_INVENTORY_ACTION)
+    }, WINDOW_INVENTORY_ACTION)
   end
 
   if Input.menu_back() then
-    GameState.set_state(GAME_STATE_GAME)
+    GameWindow.set_state(WINDOW_GAME)
   end
 end
 
@@ -386,7 +386,7 @@ function MenuActions.play()
   Context.player.vy = 0
   Context.player.jumps = 0
   Context.current_screen = 1
-  GameState.set_state(GAME_STATE_GAME)
+  GameWindow.set_state(WINDOW_GAME)
 end
 
 function MenuActions.exit()
@@ -405,15 +405,15 @@ Context.menu_items = {
 function NpcActions.talk_to()
   local npc = Context.dialog.active_entity
   if npc.dialog and npc.dialog.start then
-    PopupState.set_dialog_node("start")
+    PopupWindow.set_dialog_node("start")
   else
     -- if no dialog, go back
-    GameState.set_state(GAME_STATE_GAME)
+    GameWindow.set_state(WINDOW_GAME)
   end
 end
 function NpcActions.fight() end
 function NpcActions.go_back()
-  GameState.set_state(GAME_STATE_GAME)
+  GameWindow.set_state(WINDOW_GAME)
 end
 
 --------------------------------------------------------------------------------
@@ -421,10 +421,10 @@ end
 --------------------------------------------------------------------------------
 function ItemActions.use()
   print("Used item: " .. Context.dialog.active_entity.name)
-  GameState.set_state(GAME_STATE_INVENTORY)
+  GameWindow.set_state(WINDOW_INVENTORY)
 end
 function ItemActions.look_at()
-  PopupState.show_description_dialog(Context.dialog.active_entity, Context.dialog.active_entity.desc)
+  PopupWindow.show_description_dialog(Context.dialog.active_entity, Context.dialog.active_entity.desc)
 end
 function ItemActions.put_away()
   -- Add item to inventory
@@ -440,14 +440,14 @@ function ItemActions.put_away()
   end
 
   -- Go back to game
-  GameState.set_state(GAME_STATE_GAME)
+  GameWindow.set_state(WINDOW_GAME)
 end
 function ItemActions.go_back_from_item_dialog()
-  GameState.set_state(GAME_STATE_GAME)
+  GameWindow.set_state(WINDOW_GAME)
 end
 
 function ItemActions.go_back_from_inventory_action()
-	GameState.set_state(GAME_STATE_GAME)
+	GameWindow.set_state(WINDOW_GAME)
 end
 
 function ItemActions.drop()
@@ -466,7 +466,7 @@ function ItemActions.drop()
   table.insert(currentScreenData.items, Context.dialog.active_entity)
 
   -- Go back to inventory
-  GameState.set_state(GAME_STATE_INVENTORY)
+  GameWindow.set_state(WINDOW_INVENTORY)
 end
 
 
@@ -491,10 +491,10 @@ function UI.draw_top_bar(title)
 end
 
 function UI.draw_dialog()
-  PopupState.draw()
+  PopupWindow.draw()
 end
 
-function PopupState.draw()
+function PopupWindow.draw()
   rect(40, 40, 160, 80, Config.colors.black)
   rectb(40, 40, 160, 80, Config.colors.green)
 
@@ -593,27 +593,27 @@ end
 --------------------------------------------------------------------------------
 -- Splash Module
 --------------------------------------------------------------------------------
-function SplashState.draw()
+function SplashWindow.draw()
   print("Mr. Anderson's", 78, 60, Config.colors.green)
   print("Addventure", 90, 70, Config.colors.green)
 end
 
-function SplashState.update()
+function SplashWindow.update()
   Context.splash_timer = Context.splash_timer - 1
   if Context.splash_timer <= 0 or Input.menu_confirm() then
-    GameState.set_state(GAME_STATE_INTRO)
+    GameWindow.set_state(WINDOW_INTRO)
   end
 end
 
 --------------------------------------------------------------------------------
 -- Intro Module
 --------------------------------------------------------------------------------
-function IntroState.draw()
+function IntroWindow.draw()
   local x = (Config.screen.width - 132) / 2 -- Centered text
   print(Context.intro.text, x, Context.intro.y, Config.colors.green)
 end
 
-function IntroState.update()
+function IntroWindow.update()
   Context.intro.y = Context.intro.y - Context.intro.speed
 
   -- Count lines in intro text to determine when scrolling is done
@@ -624,24 +624,24 @@ function IntroState.update()
 
   -- When text is off-screen, go to menu
   if Context.intro.y < -lines * 8 then
-    GameState.set_state(GAME_STATE_MENU)
+    GameWindow.set_state(WINDOW_MENU)
   end
 
   -- Skip intro by pressing A
   if Input.menu_confirm() then
-    GameState.set_state(GAME_STATE_MENU)
+    GameWindow.set_state(WINDOW_MENU)
   end
 end
 
 --------------------------------------------------------------------------------
 -- Menu Module
 --------------------------------------------------------------------------------
-function MenuState.draw()
+function MenuWindow.draw()
   UI.draw_top_bar("Main Menu")
   UI.draw_menu(Context.menu_items, Context.selected_menu_item, 108, 70)
 end
 
-function MenuState.update()
+function MenuWindow.update()
   Context.selected_menu_item = UI.update_menu(Context.menu_items, Context.selected_menu_item)
 
   if Input.menu_confirm() then
@@ -655,7 +655,7 @@ end
 --------------------------------------------------------------------------------
 -- Game Module
 --------------------------------------------------------------------------------
-function GameState.draw()
+function GameWindow.draw()
   local currentScreenData = Context.screens[Context.current_screen]
 
   UI.draw_top_bar(currentScreenData.name)
@@ -748,11 +748,11 @@ function Player.update()
     -- NPC interaction
     for _, npc in ipairs(currentScreenData.npcs) do
       if math.abs(Context.player.x - npc.x) < Config.physics.interaction_radius_npc and math.abs(Context.player.y - npc.y) < Config.physics.interaction_radius_npc then
-        PopupState.show_menu_dialog(npc, {
+        PopupWindow.show_menu_dialog(npc, {
           {label = "Talk to", action = NpcActions.talk_to},
           {label = "Fight", action = NpcActions.fight},
           {label = "Go back", action = NpcActions.go_back}
-        }, GAME_STATE_POPUP)
+        }, WINDOW_POPUP)
         interaction_found = true
         break
       end
@@ -762,12 +762,12 @@ function Player.update()
       -- Item interaction
       for _, item in ipairs(currentScreenData.items) do
         if math.abs(Context.player.x - item.x) < Config.physics.interaction_radius_item and math.abs(Context.player.y - item.y) < Config.physics.interaction_radius_item then
-          PopupState.show_menu_dialog(item, {
+          PopupWindow.show_menu_dialog(item, {
             {label = "Use", action = ItemActions.use},
             {label = "Look at", action = ItemActions.look_at},
             {label = "Put away", action = ItemActions.put_away},
             {label = "Go back", action = ItemActions.go_back_from_item_dialog}
-          }, GAME_STATE_POPUP)
+          }, WINDOW_POPUP)
           interaction_found = true
           break
         end
@@ -776,30 +776,30 @@ function Player.update()
 
     -- If no interaction happened, open inventory
     if not interaction_found then
-      GameState.set_state(GAME_STATE_INVENTORY)
+      GameWindow.set_state(WINDOW_INVENTORY)
     end
   end
 end
 
-function GameState.update()
+function GameWindow.update()
 
   Player.update() -- Call the encapsulated player update logic
 
 end
 
-function GameState.set_state(new_state)
-  Context.game_state = new_state
+function GameWindow.set_state(new_state)
+  Context.active_window = new_state
   -- Add any state-specific initialization/cleanup here later if needed
 end
 
 
 
-function PopupState.set_dialog_node(node_key)
+function PopupWindow.set_dialog_node(node_key)
   local npc = Context.dialog.active_entity
   local node = npc.dialog[node_key]
 
   if not node then
-    GameState.set_state(GAME_STATE_GAME)
+    GameWindow.set_state(WINDOW_GAME)
     return
   end
 
@@ -812,7 +812,7 @@ function PopupState.set_dialog_node(node_key)
       table.insert(menu_items, {
         label = option.label,
         action = function()
-          PopupState.set_dialog_node(option.next_node)
+          PopupWindow.set_dialog_node(option.next_node)
         end
       })
     end
@@ -822,22 +822,22 @@ function PopupState.set_dialog_node(node_key)
   if #menu_items == 0 then
       table.insert(menu_items, {
           label = "Go back",
-          action = function() GameState.set_state(GAME_STATE_GAME) end
+          action = function() GameWindow.set_state(WINDOW_GAME) end
       })
   end
 
   Context.dialog.menu_items = menu_items
   Context.dialog.selected_menu_item = 1
   Context.dialog.showing_description = false
-  GameState.set_state(GAME_STATE_POPUP)
+  GameWindow.set_state(WINDOW_POPUP)
 end
 
-function PopupState.update()
+function PopupWindow.update()
   if Context.dialog.showing_description then
     if Input.menu_confirm() or Input.menu_back() then
       Context.dialog.showing_description = false
       Context.dialog.text = "" -- Clear the description text
-      -- No need to change game_state, as it remains in GAME_STATE_POPUP or GAME_STATE_INVENTORY_ACTION
+      -- No need to change active_window, as it remains in WINDOW_POPUP or WINDOW_INVENTORY_ACTION
     end
   else
     Context.dialog.selected_menu_item = UI.update_menu(Context.dialog.menu_items, Context.dialog.selected_menu_item)
@@ -850,24 +850,24 @@ function PopupState.update()
     end
     
     if Input.menu_back() then
-      GameState.set_state(GAME_STATE_GAME)
+      GameWindow.set_state(WINDOW_GAME)
     end
   end
 end
 
-function PopupState.show_menu_dialog(entity, menu_items, dialog_game_state)
+function PopupWindow.show_menu_dialog(entity, menu_items, dialog_active_window)
   Context.dialog.active_entity = entity
   Context.dialog.text = "" -- Initial dialog text is empty, name is title
-  GameState.set_state(dialog_game_state or GAME_STATE_POPUP)
+  GameWindow.set_state(dialog_active_window or WINDOW_POPUP)
   Context.dialog.showing_description = false
   Context.dialog.menu_items = menu_items
   Context.dialog.selected_menu_item = 1
 end
 
-function PopupState.show_description_dialog(entity, description_text)
+function PopupWindow.show_description_dialog(entity, description_text)
   Context.dialog.active_entity = entity
   Context.dialog.text = description_text
-  GameState.set_state(GAME_STATE_POPUP)
+  GameWindow.set_state(WINDOW_POPUP)
   Context.dialog.showing_description = true
   -- No menu items needed for description dialog
 end
@@ -876,41 +876,41 @@ end
 -- Main Game Loop
 --------------------------------------------------------------------------------
 local STATE_HANDLERS = {
-  [GAME_STATE_SPLASH] = function()
-    SplashState.update()
-    SplashState.draw()
+  [WINDOW_SPLASH] = function()
+    SplashWindow.update()
+    SplashWindow.draw()
   end,
-  [GAME_STATE_INTRO] = function()
-    IntroState.update()
-    IntroState.draw()
+  [WINDOW_INTRO] = function()
+    IntroWindow.update()
+    IntroWindow.draw()
   end,
-  [GAME_STATE_MENU] = function()
-    MenuState.update()
-    MenuState.draw()
+  [WINDOW_MENU] = function()
+    MenuWindow.update()
+    MenuWindow.draw()
   end,
-  [GAME_STATE_GAME] = function()
-    GameState.update()
-    GameState.draw()
+  [WINDOW_GAME] = function()
+    GameWindow.update()
+    GameWindow.draw()
   end,
-  [GAME_STATE_POPUP] = function()
-    GameState.draw() -- Draw game behind dialog
-    PopupState.draw()
-    PopupState.update()
+  [WINDOW_POPUP] = function()
+    GameWindow.draw() -- Draw game behind dialog
+    PopupWindow.draw()
+    PopupWindow.update()
   end,
-  [GAME_STATE_INVENTORY] = function()
-    InventoryState.update()
-    InventoryState.draw()
+  [WINDOW_INVENTORY] = function()
+    InventoryWindow.update()
+    InventoryWindow.draw()
   end,
-  [GAME_STATE_INVENTORY_ACTION] = function()
-    InventoryState.draw() -- Draw inventory behind dialog
-    PopupState.draw()
-    PopupState.update()
+  [WINDOW_INVENTORY_ACTION] = function()
+    InventoryWindow.draw() -- Draw inventory behind dialog
+    PopupWindow.draw()
+    PopupWindow.update()
   end,
 }
 
 function TIC()
   cls(Config.colors.black)
-  local handler = STATE_HANDLERS[Context.game_state]
+  local handler = STATE_HANDLERS[Context.active_window]
   if handler then
     handler()
   end
