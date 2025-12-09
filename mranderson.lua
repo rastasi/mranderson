@@ -49,7 +49,7 @@ local GAME_STATE_SPLASH = 0
 local GAME_STATE_INTRO = 1
 local GAME_STATE_MENU = 2
 local GAME_STATE_GAME = 3
-local GAME_STATE_DIALOG = 4
+local GAME_STATE_POPUP = 4
 local GAME_STATE_INVENTORY = 5
 local GAME_STATE_INVENTORY_ACTION = 6
 
@@ -61,7 +61,7 @@ local SplashState = {}
 local IntroState = {}
 local MenuState = {}
 local GameState = {}
-local DialogState = {}    -- Used for GAME_STATE_DIALOG and GAME_STATE_INVENTORY_ACTION
+local PopupState = {}    -- Manages popups for GAME_STATE_POPUP and GAME_STATE_INVENTORY_ACTION
 local InventoryState = {} -- Used for GAME_STATE_INVENTORY
 
 -- Other Modules
@@ -90,7 +90,8 @@ local State = {
     menu_items = {},
     selected_menu_item = 1,
     active_entity = nil,
-    showing_description = false
+    showing_description = false,
+    current_node_key = nil
   },
   player = {
     x = Config.player.start_x,
@@ -134,13 +135,65 @@ local State = {
           x = 180,
           y = 82,
           name = "Trinity",
-          sprite_id = 2
+          sprite_id = 2,
+          dialog = {
+            start = {
+              text = "Hello, Neo.",
+              options = {
+                {label = "Who are you?", next_node = "who_are_you"},
+                {label = "My name is not Neo.", next_node = "not_neo"},
+                {label = "...", next_node = "silent"}
+              }
+            },
+            who_are_you = {
+              text = "I am Trinity. I've been looking for you.",
+              options = {
+                {label = "The famous hacker?", next_node = "famous_hacker"},
+                {label = "Why me?", next_node = "why_me"}
+              }
+            },
+            not_neo = {
+              text = "I know. But you will be.",
+              options = {
+                {label = "What are you talking about?", next_node = "who_are_you"}
+              }
+            },
+            silent = {
+              text = "You're not much of a talker, are you?",
+              options = {
+                {label = "I guess not.", next_node = "dialog_end"}
+              }
+            },
+            famous_hacker = {
+                text = "The one and only.",
+                options = {
+                    {label = "Wow.", next_node = "dialog_end"}
+                }
+            },
+            why_me = {
+                text = "Morpheus believes you are The One.",
+                options = {
+                    {label = "The One?", next_node = "the_one"}
+                }
+            },
+            the_one = {
+                text = "The one who will save us all.",
+                options = {
+                    {label = "I'm just a programmer.", next_node = "dialog_end"}
+                }
+            },
+            dialog_end = {
+              text = "We'll talk later.",
+              options = {} -- No options, ends conversation
+            }
+          }
         },
         {
           x = 90,
           y = 102,
           name = "Oracle",
-          sprite_id = 3
+          sprite_id = 3,
+          dialog = {}
         }
       },
       items = {
@@ -182,13 +235,45 @@ local State = {
           x = 120,
           y = 72,
           name = "Morpheus",
-          sprite_id = 5
+          sprite_id = 5,
+          dialog = {
+            start = {
+                text = "At last. Welcome, Neo. As you no doubt have guessed, I am Morpheus.",
+                options = {
+                    {label = "It's an honor to meet you.", next_node = "honor"},
+                    {label = "You've been looking for me.", next_node = "looking_for_me"}
+                }
+            },
+            honor = {
+                text = "No, the honor is mine.",
+                options = {
+                    {label = "What is this place?", next_node = "what_is_this_place"}
+                }
+            },
+            looking_for_me = {
+                text = "I have. For some time.",
+                options = {
+                    {label = "What is this place?", next_node = "what_is_this_place"}
+                }
+            },
+            what_is_this_place = {
+                text = "This is the construct. It's our loading program. We can load anything from clothing, to equipment, weapons, training simulations. Anything we need.",
+                options = {
+                    {label = "Right.", next_node = "dialog_end"}
+                }
+            },
+            dialog_end = {
+                text = "I've been waiting for you, Neo. We have much to discuss.",
+                options = {}
+            }
+          }
         },
         {
           x = 40,
           y = 92,
           name = "Tank",
-          sprite_id = 6
+          sprite_id = 6,
+          dialog = {}
         }
       },
       items = {
@@ -236,13 +321,15 @@ local State = {
           x = 210,
           y = 42,
           name = "Agent Smith",
-          sprite_id = 8
+          sprite_id = 8,
+          dialog = {}
         },
         {
           x = 160,
           y = 62,
           name = "Cypher",
-          sprite_id = 9
+          sprite_id = 9,
+          dialog = {}
         }
       },
       items = {}
@@ -276,7 +363,7 @@ function InventoryState.update()
 
   if Input.menu_confirm() and #State.inventory > 0 then
     local selected_item = State.inventory[State.selected_inventory_item]
-    DialogState.show_menu_dialog(selected_item, {
+    PopupState.show_menu_dialog(selected_item, {
       {label = "Use", action = ItemActions.use},
       {label = "Drop", action = ItemActions.drop},
       {label = "Look at", action = ItemActions.look_at},
@@ -316,7 +403,15 @@ State.menu_items = {
 --------------------------------------------------------------------------------
 -- NPC Actions
 --------------------------------------------------------------------------------
-function NpcActions.talk_to() end
+function NpcActions.talk_to()
+  local npc = State.dialog.active_entity
+  if npc.dialog and npc.dialog.start then
+    PopupState.set_dialog_node("start")
+  else
+    -- if no dialog, go back
+    GameState.set_state(GAME_STATE_GAME)
+  end
+end
 function NpcActions.fight() end
 function NpcActions.go_back()
   GameState.set_state(GAME_STATE_GAME)
@@ -330,7 +425,7 @@ function ItemActions.use()
   GameState.set_state(GAME_STATE_INVENTORY)
 end
 function ItemActions.look_at()
-  DialogState.show_description_dialog(State.dialog.active_entity, State.dialog.active_entity.desc)
+  PopupState.show_description_dialog(State.dialog.active_entity, State.dialog.active_entity.desc)
 end
 function ItemActions.put_away()
   -- Add item to inventory
@@ -397,10 +492,10 @@ function UI.draw_top_bar(title)
 end
 
 function UI.draw_dialog()
-  DialogState.draw()
+  PopupState.draw()
 end
 
-function DialogState.draw()
+function PopupState.draw()
   rect(40, 40, 160, 80, Config.colors.black)
   rectb(40, 40, 160, 80, Config.colors.green)
 
@@ -658,11 +753,11 @@ function Player.update()
     -- NPC interaction
     for _, npc in ipairs(currentScreenData.npcs) do
       if math.abs(State.player.x - npc.x) < Config.physics.interaction_radius_npc and math.abs(State.player.y - npc.y) < Config.physics.interaction_radius_npc then
-        DialogState.show_menu_dialog(npc, {
+        PopupState.show_menu_dialog(npc, {
           {label = "Talk to", action = NpcActions.talk_to},
           {label = "Fight", action = NpcActions.fight},
           {label = "Go back", action = NpcActions.go_back}
-        }, GAME_STATE_DIALOG)
+        }, GAME_STATE_POPUP)
         interaction_found = true
         break
       end
@@ -672,12 +767,12 @@ function Player.update()
       -- Item interaction
       for _, item in ipairs(currentScreenData.items) do
         if math.abs(State.player.x - item.x) < Config.physics.interaction_radius_item and math.abs(State.player.y - item.y) < Config.physics.interaction_radius_item then
-          DialogState.show_menu_dialog(item, {
+          PopupState.show_menu_dialog(item, {
             {label = "Use", action = ItemActions.use},
             {label = "Look at", action = ItemActions.look_at},
             {label = "Put away", action = ItemActions.put_away},
             {label = "Go back", action = ItemActions.go_back_from_item_dialog}
-          }, GAME_STATE_DIALOG)
+          }, GAME_STATE_POPUP)
           interaction_found = true
           break
         end
@@ -704,12 +799,50 @@ end
 
 
 
-function DialogState.update()
+function PopupState.set_dialog_node(node_key)
+  local npc = State.dialog.active_entity
+  local node = npc.dialog[node_key]
+
+  if not node then
+    GameState.set_state(GAME_STATE_GAME)
+    return
+  end
+  
+  State.dialog.current_node_key = node_key
+  State.dialog.text = node.text
+
+  local menu_items = {}
+  if node.options then
+    for _, option in ipairs(node.options) do
+      table.insert(menu_items, {
+        label = option.label,
+        action = function()
+          PopupState.set_dialog_node(option.next_node)
+        end
+      })
+    end
+  end
+
+  -- if no options, it's the end of this branch.
+  if #menu_items == 0 then
+      table.insert(menu_items, {
+          label = "Go back",
+          action = function() GameState.set_state(GAME_STATE_GAME) end
+      })
+  end
+
+  State.dialog.menu_items = menu_items
+  State.dialog.selected_menu_item = 1
+  State.dialog.showing_description = false
+  GameState.set_state(GAME_STATE_POPUP)
+end
+
+function PopupState.update()
   if State.dialog.showing_description then
     if Input.menu_confirm() or Input.menu_back() then
       State.dialog.showing_description = false
       State.dialog.text = "" -- Clear the description text
-      -- No need to change game_state, as it remains in GAME_STATE_DIALOG or GAME_STATE_INVENTORY_ACTION
+      -- No need to change game_state, as it remains in GAME_STATE_POPUP or GAME_STATE_INVENTORY_ACTION
     end
   else
     State.dialog.selected_menu_item = UI.update_menu(State.dialog.menu_items, State.dialog.selected_menu_item)
@@ -727,19 +860,19 @@ function DialogState.update()
   end
 end
 
-function DialogState.show_menu_dialog(entity, menu_items, dialog_game_state)
+function PopupState.show_menu_dialog(entity, menu_items, dialog_game_state)
   State.dialog.active_entity = entity
   State.dialog.text = "" -- Initial dialog text is empty, name is title
-  GameState.set_state(dialog_game_state or GAME_STATE_DIALOG)
+  GameState.set_state(dialog_game_state or GAME_STATE_POPUP)
   State.dialog.showing_description = false
   State.dialog.menu_items = menu_items
   State.dialog.selected_menu_item = 1
 end
 
-function DialogState.show_description_dialog(entity, description_text)
+function PopupState.show_description_dialog(entity, description_text)
   State.dialog.active_entity = entity
   State.dialog.text = description_text
-  GameState.set_state(GAME_STATE_DIALOG)
+  GameState.set_state(GAME_STATE_POPUP)
   State.dialog.showing_description = true
   -- No menu items needed for description dialog
 end
@@ -764,10 +897,10 @@ local STATE_HANDLERS = {
     GameState.update()
     GameState.draw()
   end,
-  [GAME_STATE_DIALOG] = function()
+  [GAME_STATE_POPUP] = function()
     GameState.draw() -- Draw game behind dialog
-    DialogState.draw()
-    DialogState.update()
+    PopupState.draw()
+    PopupState.update()
   end,
   [GAME_STATE_INVENTORY] = function()
     InventoryState.update()
@@ -775,8 +908,8 @@ local STATE_HANDLERS = {
   end,
   [GAME_STATE_INVENTORY_ACTION] = function()
     InventoryState.draw() -- Draw inventory behind dialog
-    DialogState.draw()
-    DialogState.update()
+    PopupState.draw()
+    PopupState.update()
   end,
 }
 
