@@ -46,3 +46,9 @@ Based on the analysis of `mranderson.lua`, the following regularities and conven
 14. **Indentation:** Use consistent indentation, likely 2 spaces, for code blocks to enhance readability.
 15. **Comments:** Employ comments to explain complex logic, delineate code sections, or clarify non-obvious design choices.
 16. **Code Sections:** Use comments (e.g., `--- INIT ---`, `--- UPDATE ---`, `--- DRAW ---`, `--- HELPERS ---`) to clearly delineate logical sections of the codebase.
+
+---
+
+## Agent Directives
+
+- **Git Operations:** In the future, do not perform `git add` or `git commit` operations. This responsibility will be handled by the user.
