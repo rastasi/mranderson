@@ -64,6 +64,7 @@ local Inventory = {}
 local NpcActions = {}
 local ItemActions = {}
 local MenuActions = {}
+local Dialog = {}
 
 --------------------------------------------------------------------------------
 -- Game State
@@ -173,22 +174,16 @@ end
 function Inventory.update()
   State.selected_inventory_item = UI.update_menu(State.inventory, State.selected_inventory_item)
 
-  if Input.action() and #State.inventory > 0 then
-    local selected_item = State.inventory[State.selected_inventory_item]
-    State.active_entity = selected_item
-    State.dialog_text = ""
-    State.game_state = GAME_STATE_INVENTORY_ACTION
-    State.showing_description = false
-    State.dialog_menu_items = {
+  if Input.menu_confirm() and #State.inventory > 0 then
+    Dialog.show_menu_dialog(selected_item, {
       {label = "Use", action = ItemActions.use},
       {label = "Drop", action = ItemActions.drop},
       {label = "Look at", action = ItemActions.look_at},
       {label = "Go back", action = ItemActions.go_back_from_inventory_action}
-    }
-    State.selected_dialog_menu_item = 1
+    }, GAME_STATE_INVENTORY_ACTION)
   end
 
-  if Input.back() then
+  if Input.menu_back() then
     State.game_state = GAME_STATE_GAME
   end
 end
@@ -234,8 +229,7 @@ function ItemActions.use()
   State.game_state = GAME_STATE_INVENTORY
 end
 function ItemActions.look_at()
-  State.dialog_text = State.active_entity.desc
-  State.showing_description = true
+  Dialog.show_description_dialog(State.active_entity, State.active_entity.desc)
 end
 function ItemActions.put_away()
   -- Add item to inventory
@@ -288,10 +282,10 @@ function Input.up() return btnp(0) end
 function Input.down() return btnp(1) end
 function Input.left() return btn(2) end
 function Input.right() return btn(3) end
-function Input.jump() return btnp(4) end
-function Input.action() return btnp(4) end
-function Input.interact() return btnp(5) end -- B button
-function Input.back() return btnp(5) end
+function Input.player_jump() return btnp(4) end
+function Input.menu_confirm() return btnp(4) end
+function Input.player_interact() return btnp(5) end -- B button
+function Input.menu_back() return btnp(5) end
 
 --------------------------------------------------------------------------------
 -- UI Module
@@ -302,6 +296,10 @@ function UI.draw_top_bar(title)
 end
 
 function UI.draw_dialog()
+  Dialog.draw()
+end
+
+function Dialog.draw()
   rect(40, 40, 160, 80, Config.colors.black)
   rectb(40, 40, 160, 80, Config.colors.green)
 
@@ -321,7 +319,7 @@ function UI.draw_dialog()
     UI.draw_menu(State.dialog_menu_items, State.selected_dialog_menu_item, 50, current_y + 2)
   else
     -- If description is showing, provide a "Go back" option automatically, or close dialog on action
-    -- For now, let's just make it implicitly wait for Input.action() or Input.back() to close
+    -- For now, let's just make it implicitly wait for Input.menu_confirm() or Input.menu_back() to close
     -- Or we can add a specific "Back" option here.
     -- Let's add a "Back" option for explicit return from description.
     print("[A] Go Back", 50, current_y + 10, Config.colors.green)
@@ -400,7 +398,7 @@ end
 
 function Splash.update()
   State.splash_timer = State.splash_timer - 1
-  if State.splash_timer <= 0 or Input.action() then
+  if State.splash_timer <= 0 or Input.menu_confirm() then
     State.game_state = GAME_STATE_INTRO
   end
 end
@@ -429,7 +427,7 @@ function Intro.update()
   end
 
   -- Skip intro by pressing A
-  if Input.action() then
+  if Input.menu_confirm() then
     State.game_state = GAME_STATE_MENU
   end
 end
@@ -446,7 +444,7 @@ end
 function Menu.update()
   State.selected_menu_item = UI.update_menu(State.menu_items, State.selected_menu_item)
 
-  if Input.action() then
+  if Input.menu_confirm() then
     local selected_item = State.menu_items[State.selected_menu_item]
     if selected_item and selected_item.action then
       selected_item.action()
@@ -495,7 +493,7 @@ function Game.update()
     State.player.vx = 0
   end
 
-  if Input.jump() and State.player.jumps < Config.physics.max_jumps then
+  if Input.player_jump() and State.player.jumps < Config.physics.max_jumps then
     State.player.vy = Config.physics.jump_power
     State.player.jumps = State.player.jumps + 1
   end
@@ -542,21 +540,16 @@ function Game.update()
   end
 
   -- Entity interaction
-  if Input.interact() then
+  if Input.player_interact() then
     local interaction_found = false
     -- NPC interaction
     for _, npc in ipairs(currentScreenData.npcs) do
       if math.abs(State.player.x - npc.x) < 12 and math.abs(State.player.y - npc.y) < 12 then
-        State.active_entity = npc
-        State.dialog_text = ""
-        State.game_state = GAME_STATE_DIALOG
-        State.showing_description = false
-        State.dialog_menu_items = {
+        Dialog.show_menu_dialog(npc, {
           {label = "Talk to", action = NpcActions.talk_to},
           {label = "Fight", action = NpcActions.fight},
           {label = "Go back", action = NpcActions.go_back}
-        }
-        State.selected_dialog_menu_item = 1
+        }, GAME_STATE_DIALOG)
         interaction_found = true
         break
       end
@@ -566,17 +559,12 @@ function Game.update()
       -- Item interaction
       for _, item in ipairs(currentScreenData.items) do
         if math.abs(State.player.x - item.x) < 8 and math.abs(State.player.y - item.y) < 8 then
-          State.active_entity = item
-          State.dialog_text = ""
-          State.game_state = GAME_STATE_DIALOG
-          State.showing_description = false
-          State.dialog_menu_items = {
+          Dialog.show_menu_dialog(item, {
             {label = "Use", action = ItemActions.use},
             {label = "Look at", action = ItemActions.look_at},
             {label = "Put away", action = ItemActions.put_away},
             {label = "Go back", action = ItemActions.go_back_from_item_dialog}
-          }
-          State.selected_dialog_menu_item = 1
+          }, GAME_STATE_DIALOG)
           interaction_found = true
           break
         end
@@ -591,8 +579,12 @@ function Game.update()
 end
 
 function Game.update_dialog()
+  Dialog.update()
+end
+
+function Dialog.update()
   if State.showing_description then
-    if Input.action() or Input.back() then
+    if Input.menu_confirm() or Input.menu_back() then
       State.showing_description = false
       State.dialog_text = "" -- Clear the description text
       -- No need to change game_state, as it remains in GAME_STATE_DIALOG or GAME_STATE_INVENTORY_ACTION
@@ -600,17 +592,34 @@ function Game.update_dialog()
   else
     State.selected_dialog_menu_item = UI.update_menu(State.dialog_menu_items, State.selected_dialog_menu_item)
 
-    if Input.action() then
+    if Input.menu_confirm() then
       local selected_item = State.dialog_menu_items[State.selected_dialog_menu_item]
       if selected_item and selected_item.action then
         selected_item.action()
       end
     end
     
-    if Input.back() then
+    if Input.menu_back() then
       State.game_state = GAME_STATE_GAME
     end
   end
+end
+
+function Dialog.show_menu_dialog(entity, menu_items, dialog_game_state)
+  State.active_entity = entity
+  State.dialog_text = "" -- Initial dialog text is empty, name is title
+  State.game_state = dialog_game_state or GAME_STATE_DIALOG
+  State.showing_description = false
+  State.dialog_menu_items = menu_items
+  State.selected_dialog_menu_item = 1
+end
+
+function Dialog.show_description_dialog(entity, description_text)
+  State.active_entity = entity
+  State.dialog_text = description_text
+  State.game_state = GAME_STATE_DIALOG -- Or GAME_STATE_INVENTORY_ACTION depending on context, but GAME_STATE_DIALOG is fine for now
+  State.showing_description = true
+  -- No menu items needed for description dialog
 end
 
 --------------------------------------------------------------------------------
@@ -635,8 +644,8 @@ local STATE_HANDLERS = {
   end,
   [GAME_STATE_DIALOG] = function()
     Game.draw() -- Draw game behind dialog
-    UI.draw_dialog()
-    Game.update_dialog()
+    Dialog.draw()
+    Dialog.update()
   end,
   [GAME_STATE_INVENTORY] = function()
     Inventory.update()
@@ -644,8 +653,8 @@ local STATE_HANDLERS = {
   end,
   [GAME_STATE_INVENTORY_ACTION] = function()
     Inventory.draw() -- Draw inventory behind dialog
-    UI.draw_dialog()
-    Game.update_dialog()
+    Dialog.draw()
+    Dialog.update()
   end,
 }
 
