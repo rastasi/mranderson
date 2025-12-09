@@ -54,17 +54,17 @@ local GAME_STATE_INVENTORY_ACTION = 6
 --------------------------------------------------------------------------------
 -- Modules
 --------------------------------------------------------------------------------
-local Splash = {}
-local Intro = {}
-local Menu = {}
-local Game = {}
+local SplashState = {}
+local IntroState = {}
+local MenuState = {}
+local GameState = {}
 local UI = {}
 local Input = {}
-local Inventory = {}
+local InventoryState = {}
 local NpcActions = {}
 local ItemActions = {}
 local MenuActions = {}
-local Dialog = {}
+local DialogState = {}
 
 --------------------------------------------------------------------------------
 -- Game State
@@ -153,7 +153,7 @@ local State = {
 --------------------------------------------------------------------------------
 -- Inventory Module
 --------------------------------------------------------------------------------
-function Inventory.draw()
+function InventoryState.draw()
   cls(Config.colors.dark_grey)
   UI.draw_top_bar("Inventory")
 
@@ -171,11 +171,11 @@ function Inventory.draw()
   end
 end
 
-function Inventory.update()
+function InventoryState.update()
   State.selected_inventory_item = UI.update_menu(State.inventory, State.selected_inventory_item)
 
   if Input.menu_confirm() and #State.inventory > 0 then
-    Dialog.show_menu_dialog(selected_item, {
+    DialogState.show_menu_dialog(selected_item, {
       {label = "Use", action = ItemActions.use},
       {label = "Drop", action = ItemActions.drop},
       {label = "Look at", action = ItemActions.look_at},
@@ -229,7 +229,7 @@ function ItemActions.use()
   State.game_state = GAME_STATE_INVENTORY
 end
 function ItemActions.look_at()
-  Dialog.show_description_dialog(State.active_entity, State.active_entity.desc)
+  DialogState.show_description_dialog(State.active_entity, State.active_entity.desc)
 end
 function ItemActions.put_away()
   -- Add item to inventory
@@ -296,10 +296,10 @@ function UI.draw_top_bar(title)
 end
 
 function UI.draw_dialog()
-  Dialog.draw()
+  DialogState.draw()
 end
 
-function Dialog.draw()
+function DialogState.draw()
   rect(40, 40, 160, 80, Config.colors.black)
   rectb(40, 40, 160, 80, Config.colors.green)
 
@@ -390,13 +390,13 @@ end
 --------------------------------------------------------------------------------
 -- Splash Module
 --------------------------------------------------------------------------------
-function Splash.draw()
+function SplashState.draw()
   cls(Config.colors.dark_grey)
   print("Mr. Anderson's", 78, 60, Config.colors.green)
   print("Addventure", 90, 70, Config.colors.green)
 end
 
-function Splash.update()
+function SplashState.update()
   State.splash_timer = State.splash_timer - 1
   if State.splash_timer <= 0 or Input.menu_confirm() then
     State.game_state = GAME_STATE_INTRO
@@ -406,13 +406,13 @@ end
 --------------------------------------------------------------------------------
 -- Intro Module
 --------------------------------------------------------------------------------
-function Intro.draw()
+function IntroState.draw()
   cls(Config.colors.dark_grey)
   local x = (Config.screen.width - 132) / 2 -- Centered text
   print(State.intro.text, x, State.intro.y, Config.colors.green)
 end
 
-function Intro.update()
+function IntroState.update()
   State.intro.y = State.intro.y - State.intro.speed
 
   -- Count lines in intro text to determine when scrolling is done
@@ -435,13 +435,13 @@ end
 --------------------------------------------------------------------------------
 -- Menu Module
 --------------------------------------------------------------------------------
-function Menu.draw()
+function MenuState.draw()
   cls(Config.colors.dark_grey)
   UI.draw_top_bar("Main Menu")
   UI.draw_menu(State.menu_items, State.selected_menu_item, 108, 70)
 end
 
-function Menu.update()
+function MenuState.update()
   State.selected_menu_item = UI.update_menu(State.menu_items, State.selected_menu_item)
 
   if Input.menu_confirm() then
@@ -455,7 +455,7 @@ end
 --------------------------------------------------------------------------------
 -- Game Module
 --------------------------------------------------------------------------------
-function Game.draw()
+function GameState.draw()
   local currentScreenData = State.screens[State.current_screen]
   
   cls(Config.colors.dark_grey)
@@ -483,7 +483,7 @@ function Game.draw()
   spr(State.player.sprite_id, State.player.x, State.player.y, 0)
 end
 
-function Game.update()
+function GameState.update()
   -- Handle input
   if Input.left() then
     State.player.vx = -Config.physics.move_speed
@@ -545,7 +545,7 @@ function Game.update()
     -- NPC interaction
     for _, npc in ipairs(currentScreenData.npcs) do
       if math.abs(State.player.x - npc.x) < 12 and math.abs(State.player.y - npc.y) < 12 then
-        Dialog.show_menu_dialog(npc, {
+        DialogState.show_menu_dialog(npc, {
           {label = "Talk to", action = NpcActions.talk_to},
           {label = "Fight", action = NpcActions.fight},
           {label = "Go back", action = NpcActions.go_back}
@@ -559,7 +559,7 @@ function Game.update()
       -- Item interaction
       for _, item in ipairs(currentScreenData.items) do
         if math.abs(State.player.x - item.x) < 8 and math.abs(State.player.y - item.y) < 8 then
-          Dialog.show_menu_dialog(item, {
+          DialogState.show_menu_dialog(item, {
             {label = "Use", action = ItemActions.use},
             {label = "Look at", action = ItemActions.look_at},
             {label = "Put away", action = ItemActions.put_away},
@@ -578,11 +578,9 @@ function Game.update()
   end
 end
 
-function Game.update_dialog()
-  Dialog.update()
-end
 
-function Dialog.update()
+
+function DialogState.update()
   if State.showing_description then
     if Input.menu_confirm() or Input.menu_back() then
       State.showing_description = false
@@ -605,7 +603,7 @@ function Dialog.update()
   end
 end
 
-function Dialog.show_menu_dialog(entity, menu_items, dialog_game_state)
+function DialogState.show_menu_dialog(entity, menu_items, dialog_game_state)
   State.active_entity = entity
   State.dialog_text = "" -- Initial dialog text is empty, name is title
   State.game_state = dialog_game_state or GAME_STATE_DIALOG
@@ -614,7 +612,7 @@ function Dialog.show_menu_dialog(entity, menu_items, dialog_game_state)
   State.selected_dialog_menu_item = 1
 end
 
-function Dialog.show_description_dialog(entity, description_text)
+function DialogState.show_description_dialog(entity, description_text)
   State.active_entity = entity
   State.dialog_text = description_text
   State.game_state = GAME_STATE_DIALOG -- Or GAME_STATE_INVENTORY_ACTION depending on context, but GAME_STATE_DIALOG is fine for now
@@ -627,34 +625,34 @@ end
 --------------------------------------------------------------------------------
 local STATE_HANDLERS = {
   [GAME_STATE_SPLASH] = function()
-    Splash.update()
-    Splash.draw()
+    SplashState.update()
+    SplashState.draw()
   end,
   [GAME_STATE_INTRO] = function()
-    Intro.update()
-    Intro.draw()
+    IntroState.update()
+    IntroState.draw()
   end,
   [GAME_STATE_MENU] = function()
-    Menu.update()
-    Menu.draw()
+    MenuState.update()
+    MenuState.draw()
   end,
   [GAME_STATE_GAME] = function()
-    Game.update()
-    Game.draw()
+    GameState.update()
+    GameState.draw()
   end,
   [GAME_STATE_DIALOG] = function()
-    Game.draw() -- Draw game behind dialog
-    Dialog.draw()
-    Dialog.update()
+    GameState.draw() -- Draw game behind dialog
+    DialogState.draw()
+    DialogState.update()
   end,
   [GAME_STATE_INVENTORY] = function()
-    Inventory.update()
-    Inventory.draw()
+    InventoryState.update()
+    InventoryState.draw()
   end,
   [GAME_STATE_INVENTORY_ACTION] = function()
-    Inventory.draw() -- Draw inventory behind dialog
-    Dialog.draw()
-    Dialog.update()
+    InventoryState.draw() -- Draw inventory behind dialog
+    DialogState.draw()
+    DialogState.update()
   end,
 }
 
