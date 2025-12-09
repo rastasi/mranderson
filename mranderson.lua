@@ -3,7 +3,7 @@
 -- desc:    Life of a programmer in the Vector
 -- site:    https://github.com/rastasi/mranderson
 -- license: MIT License
--- version: 0.8
+-- version: 0.9
 -- script:  lua
 
 --------------------------------------------------------------------------------
@@ -549,45 +549,36 @@ function UI.update_menu(items, selected_item)
 end
 
 function UI.word_wrap(text, max_chars_per_line)
-    local result_lines = {}
-    local segments = {}
-
-    -- Split the input text by explicit newline characters first
-    for segment in text:gmatch("([^\\n]*)\\n?") do
-        table.insert(segments, segment)
-    end
+    if text == nil then return {""} end
+    local lines = {}
     
-    -- Process each segment for word wrapping
-    for _, segment_text in ipairs(segments) do
+    for input_line in (text .. "\n"):gmatch("(.-)\n") do
         local current_line = ""
-        local words = {}
-
-        -- Split segment into words
-        for word in segment_text:gmatch("%S+") do
-            table.insert(words, word)
-        end
-
-        local i = 1
-        while i <= #words do
-            local word = words[i]
+        local words_in_line = 0
+        for word in input_line:gmatch("%S+") do
+            words_in_line = words_in_line + 1
             if #current_line == 0 then
                 current_line = word
-            elseif #current_line + 1 + #word <= max_chars_per_line then
+            elseif #current_line + #word + 1 <= max_chars_per_line then
                 current_line = current_line .. " " .. word
             else
-                table.insert(result_lines, current_line)
+                table.insert(lines, current_line)
                 current_line = word
             end
-            i = i + 1
         end
-
-        -- Add the last line of the segment if not empty
-        if #current_line > 0 then
-            table.insert(result_lines, current_line)
+        
+        if words_in_line > 0 then
+            table.insert(lines, current_line)
+        else
+            table.insert(lines, "")
         end
     end
-
-    return result_lines
+    
+    if #lines == 0 then
+        return {""}
+    end
+    
+    return lines
 end
 
 --------------------------------------------------------------------------------
