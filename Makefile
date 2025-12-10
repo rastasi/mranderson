@@ -43,4 +43,5 @@ export: $(OUTPUT)
 
 watch:
 	@echo "==> Watching project: $(PROJECT)"
+	make build PROJECT=$(PROJECT)
 	fswatch -o $(SRC_DIR) $(ORDER) | while read; do make build PROJECT=$(PROJECT); done

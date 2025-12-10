@@ -120,7 +120,59 @@ local Context = {
           y = 102,
           name = "Oracle",
           sprite_id = 3,
-          dialog = {}
+          dialog = {
+            start = {
+                text = "I know what you're thinking. 'Am I in the right place?'",
+                options = {
+                    {label = "Who are you?", next_node = "who_are_you"},
+                    {label = "I guess I am.", next_node = "you_are"}
+                }
+            },
+            who_are_you = {
+                text = "I'm the Oracle. And you're right on time. Want a cookie?",
+                options = {
+                    {label = "Sure.", next_node = "cookie"},
+                    {label = "No, thank you.", next_node = "no_cookie"}
+                }
+            },
+            you_are = {
+                text = "Of course you are. Sooner or later, everyone comes to see me. Want a cookie?",
+                options = {
+                    {label = "Yes, please.", next_node = "cookie"},
+                    {label = "I'm good.", next_node = "no_cookie"}
+                }
+            },
+            cookie = {
+                text = "Here you go. Now, what's really on your mind?",
+                options = {
+                    {label = "Am I The One?", next_node = "the_one"},
+                    {label = "What is the Matrix?", next_node = "the_matrix"}
+                }
+            },
+            no_cookie = {
+                text = "Suit yourself. Now, what's troubling you?",
+                options = {
+                    {label = "Am I The One?", next_node = "the_one"},
+                    {label = "What is the Matrix?", next_node = "the_matrix"}
+                }
+            },
+            the_one = {
+                text = "Being The One is just like being in love. No one can tell you you're in love, you just know it. Through and through. Balls to bones.",
+                options = {
+                    {label = "So I'm not?", next_node = "dialog_end"}
+                }
+            },
+            the_matrix = {
+                text = "The Matrix is a system, Neo. That system is our enemy. But when you're inside, you look around, what do you see? The very minds of the people we are trying to save.",
+                options = {
+                    {label = "I see.", next_node = "dialog_end"}
+                }
+            },
+            dialog_end = {
+                text = "You have to understand, most of these people are not ready to be unplugged.",
+                options = {}
+            }
+          }
         }
       },
       items = {
@@ -201,7 +253,44 @@ local Context = {
           y = 92,
           name = "Tank",
           sprite_id = 6,
-          dialog = {}
+          dialog = {
+            start = {
+                text = "Hey, Neo! Welcome to the construct. I'm Tank.",
+                options = {
+                    {label = "Good to meet you.", next_node = "good_to_meet_you"},
+                    {label = "This place is incredible.", next_node = "incredible"}
+                }
+            },
+            good_to_meet_you = {
+                text = "You too! We've been waiting for you. Need anything? Training? Weapons?",
+                options = {
+                    {label = "Training?", next_node = "training"},
+                    {label = "I'm good for now.", next_node = "dialog_end"}
+                }
+            },
+            incredible = {
+                text = "Isn't it? The boss's design. We can load anything we need. What do you want to learn?",
+                options = {
+                    {label = "Show me.", next_node = "training"}
+                }
+            },
+            training = {
+                text = "Jujitsu? Kung Fu? How about... all of them?",
+                options = {
+                    {label = "All of them.", next_node = "all_of_them"}
+                }
+            },
+            all_of_them = {
+                text = "Operator, load the combat training program.",
+                options = {
+                    {label = "...", next_node = "dialog_end"}
+                }
+            },
+            dialog_end = {
+                text = "Just holler if you need anything. Anything at all.",
+                options = {}
+            }
+          }
         }
       },
       items = {
@@ -251,14 +340,93 @@ local Context = {
           y = 42,
           name = "Agent Smith",
           sprite_id = 8,
-          dialog = {}
+          dialog = {
+            start = {
+                text = "Mr. Anderson. We've been expecting you.",
+                options = {
+                    {label = "My name is Neo.", next_node = "name_is_neo"},
+                    {label = "...", next_node = "silent"}
+                }
+            },
+            name_is_neo = {
+                text = "Whatever you say. You're here for a reason.",
+                options = {
+                    {label = "What reason?", next_node = "what_reason"}
+                }
+            },
+            silent = {
+                text = "The silent type. It doesn't matter. You are an anomaly.",
+                options = {
+                    {label = "What do you want?", next_node = "what_reason"}
+                }
+            },
+            what_reason = {
+                text = "To be deleted. The system has no place for your kind.",
+                options = {
+                    {label = "I won't let you.", next_node = "wont_let_you"}
+                }
+            },
+            wont_let_you = {
+                text = "You hear that, Mr. Anderson? That is the sound of inevitability.",
+                options = {
+                    {label = "...", next_node = "dialog_end"}
+                }
+            },
+            dialog_end = {
+                text = "It is purpose that created us. Purpose that connects us. Purpose that pulls us. That guides us. That drives us. It is purpose that defines. Purpose that binds us.",
+                options = {}
+            }
+          }
         },
         {
           x = 160,
           y = 62,
           name = "Cypher",
           sprite_id = 9,
-          dialog = {}
+          dialog = {
+            start = {
+                text = "Well, well. The new messiah. Welcome to the real world.",
+                options = {
+                    {label = "You don't seem happy.", next_node = "not_happy"},
+                    {label = "...", next_node = "silent"}
+                }
+            },
+            not_happy = {
+                text = "Happy? Ignorance is bliss, Neo. We've been fighting this war for years. For what?",
+                options = {
+                    {label = "For freedom.", next_node = "freedom"}
+                }
+            },
+            silent = {
+                text = "Not a talker, huh? Smart. Less to regret later. Want a drink?",
+                options = {
+                    {label = "Sure.", next_node = "drink"},
+                    {label = "No thanks.", next_node = "no_drink"}
+                }
+            },
+            drink = {
+                text = "Good stuff. The little things you miss, you know? Like a good steak.",
+                options = {
+                    {label = "I guess.", next_node = "dialog_end"}
+                }
+            },
+            no_drink = {
+                text = "Your loss. More for me.",
+                options = {
+                    {label = "...", next_node = "dialog_end"}
+                }
+            },
+            freedom = {
+                text = "Freedom... right. If Morpheus told you you could fly, would you believe him?",
+                options = {
+                    {label = "He's our leader.", next_node = "dialog_end"}
+                }
+            },
+            dialog_end = {
+                text = "Just be careful who you trust.",
+                options = {}
+            }
+          }
         }
       },
       items = {}
