@@ -1,0 +1,7 @@
+-- title:   Mr Anderson's Adventure
+-- author:  Zsolt Tasnadi
+-- desc:    Life of a programmer in the Vector
+-- site:    https://github.com/rastasi/mranderson
+-- license: MIT License
+-- version: 0.9
+-- script:  lua

@@ -1,0 +1,10 @@
+--------------------------------------------------------------------------------
+-- Game Windows
+--------------------------------------------------------------------------------
+local WINDOW_SPLASH = 0
+local WINDOW_INTRO = 1
+local WINDOW_MENU = 2
+local WINDOW_GAME = 3
+local WINDOW_POPUP = 4
+local WINDOW_INVENTORY = 5
+local WINDOW_INVENTORY_ACTION = 6

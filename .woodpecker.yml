@@ -9,6 +9,7 @@ steps:
       <<: *environment
       XDG_RUNTIME_DIR: /tmp
     commands:
+      - make build PROJECT=$GAME_NAME
       - tic80 --cli --skip --fs=. --cmd="load $GAME_NAME.$GAME_LANG & save $GAME_NAME & export html $GAME_NAME.html & exit"
 
   - name: artifact
