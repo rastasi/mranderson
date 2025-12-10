@@ -38,7 +38,6 @@ export: $(OUTPUT)
 	@echo "==> TIC-80 export..."
 	tic80 --cli --skip --fs=. \
 		--cmd="load $(OUTPUT) & save $(PROJECT) & export html $(PROJECT).html & exit"
-	@zip -q $(OUTPUT_ZIP) $(PROJECT).html
 	@echo "==> HTML ZIP: $(OUTPUT_ZIP)"
 	@echo "==> TIC: $(OUTPUT_TIC)"
 
