@@ -1,0 +1,19 @@
+{
+  "Lua.diagnostics.globals": [
+    "rect",
+    "exit",
+    "spr"
+  ],
+
+  "Lua.workspace.library": [
+    "./inc"
+  ],
+  "Lua.runtime.path": [
+    "?.lua",
+    "?/init.lua",
+    "inc/?.lua"
+  ],
+  "Lua.diagnostics.disable": [
+    "undefined-global"
+  ]
+}
