@@ -65,3 +65,15 @@ function UI.word_wrap(text, max_chars_per_line)
     return lines
 end
 
+function UI.create_numeric_stepper(label, value_getter, value_setter, min, max, step, format)
+  return {
+    label = label,
+    get = value_getter,
+    set = value_setter,
+    min = min,
+    max = max,
+    step = step,
+    format = format or "%.1f",
+    type = "numeric_stepper"
+  }
+end

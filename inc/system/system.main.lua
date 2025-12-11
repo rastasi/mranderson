@@ -29,6 +29,10 @@ local STATE_HANDLERS = {
     PopupWindow.draw()
     PopupWindow.update()
   end,
+  [WINDOW_CONFIGURATION] = function()
+    ConfigurationWindow.update()
+    ConfigurationWindow.draw()
+  end,
 }
 
 function TIC()

@@ -29,8 +29,14 @@ function MenuWindow.exit()
   exit()
 end
 
+function MenuWindow.configuration()
+  ConfigurationWindow.init()
+  GameWindow.set_state(WINDOW_CONFIGURATION)
+end
+
 -- Initialize menu items after actions are defined
 Context.menu_items = {
   {label = "Play", action = MenuWindow.play},
+  {label = "Configuration", action = MenuWindow.configuration},
   {label = "Exit", action = MenuWindow.exit}
 }

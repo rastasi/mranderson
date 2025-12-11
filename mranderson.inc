@@ -11,6 +11,7 @@ system/system.ui.lua
 window/window.splash.lua
 window/window.intro.lua
 window/window.menu.lua
+window/window.configuration.lua
 window/window.popup.lua
 window/window.inventory.lua
 window/window.game.lua
