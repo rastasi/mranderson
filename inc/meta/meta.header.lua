@@ -3,5 +3,5 @@
 -- desc:    Life of a programmer in the Vector
 -- site:    https://github.com/rastasi/mranderson
 -- license: MIT License
--- version: 0.12
+-- version: 0.13
 -- script:  lua
