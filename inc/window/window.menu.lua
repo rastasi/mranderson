@@ -28,6 +28,10 @@ function MenuWindow.save_game()
   Context.save_game() -- This function will be created in Context
 end
 
+function MenuWindow.resume_game()
+  GameWindow.set_state(WINDOW_GAME)
+end
+
 function MenuWindow.exit()
   exit()
 end
@@ -38,17 +42,18 @@ function MenuWindow.configuration()
 end
 
 function MenuWindow.refresh_menu_items()
-  Context.menu_items = {
-    {label = "New Game", action = MenuWindow.new_game},
-    {label = "Load Game", action = MenuWindow.load_game},
-  }
+  Context.menu_items = {} -- Start with an empty table
 
   if Context.game_in_progress then
+    table.insert(Context.menu_items, {label = "Resume Game", action = MenuWindow.resume_game})
     table.insert(Context.menu_items, {label = "Save Game", action = MenuWindow.save_game})
   end
 
+  table.insert(Context.menu_items, {label = "New Game", action = MenuWindow.new_game})
+  table.insert(Context.menu_items, {label = "Load Game", action = MenuWindow.load_game})
   table.insert(Context.menu_items, {label = "Configuration", action = MenuWindow.configuration})
   table.insert(Context.menu_items, {label = "Exit", action = MenuWindow.exit})
+  
   Context.selected_menu_item = 1 -- Reset selection after refreshing
 end
 
