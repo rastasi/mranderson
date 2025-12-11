@@ -24,7 +24,8 @@ local function clone_table(t)
   return copy
 end
 
-local function create_initial_context()
+-- This function returns a table containing only the initial *data* for Context
+local function get_initial_data()
   return {
     active_window = WINDOW_SPLASH,
     inventory = {},
@@ -63,7 +64,6 @@ local function create_initial_context()
     selected_menu_item = 1,
     selected_inventory_item = 1,
     game_in_progress = false, -- New flag
-    -- Screen data (deep copy to ensure new game resets correctly)
     screens = clone_table({
       {
         -- Screen 1
@@ -460,22 +460,28 @@ local function create_initial_context()
   }
 end
 
-Context = create_initial_context()
+Context = {}
 
 local function reset_context_to_initial_state()
-  local initial_state = create_initial_context()
+  local initial_data = get_initial_data()
 
-  -- Clear existing keys from Context
+  -- Clear existing data properties from Context (but not methods)
   for k in pairs(Context) do
-    Context[k] = nil
+    if type(Context[k]) ~= "function" then -- Only clear data, leave functions
+      Context[k] = nil
+    end
   end
 
-  -- Copy all properties from initial_state to Context
-  for k, v in pairs(initial_state) do
+  -- Copy all initial data properties into Context
+  for k, v in pairs(initial_data) do
     Context[k] = v
   end
 end
 
+-- Initially populate Context with data
+reset_context_to_initial_state()
+
+-- Now define the methods for Context
 function Context.new_game()
   reset_context_to_initial_state()
   Context.game_in_progress = true
@@ -501,7 +507,7 @@ function Context.load_game()
     return
   end
 
-  reset_context_to_initial_state()
+  reset_context_to_initial_state() -- Reset data, preserve methods
 
   Context.player.x = mget(SAVE_GAME_PLAYER_X_ADDRESS, SAVE_GAME_BANK) / 10
   Context.player.y = mget(SAVE_GAME_PLAYER_Y_ADDRESS, SAVE_GAME_BANK) / 10
