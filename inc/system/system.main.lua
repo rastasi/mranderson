@@ -35,7 +35,18 @@ local STATE_HANDLERS = {
   end,
 }
 
+local initialized_game = false
+
+function init_game()
+  if initialized_game then return end
+
+  MenuWindow.refresh_menu_items()
+  initialized_game = true
+end
+
 function TIC()
+  init_game() 
+
   cls(Config.colors.black)
   local handler = STATE_HANDLERS[Context.active_window]
   if handler then

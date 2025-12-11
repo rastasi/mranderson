@@ -17,6 +17,14 @@ function ConfigurationWindow.init()
       function(v) Config.physics.max_jumps = v end,
       1, 5, 1, "%d"
     ),
+    UI.create_action_item(
+      "Save",
+      function() Config.save() end
+    ),
+    UI.create_action_item(
+      "Restore Defaults",
+      function() Config.restore_defaults() end
+    ),
   }
 end
 
@@ -31,23 +39,35 @@ function ConfigurationWindow.draw()
   for i, control in ipairs(ConfigurationWindow.controls) do
     local current_y = y_start + (i - 1) * 12
     local color = Config.colors.green
-
-    local value = control.get()
-    local label_text = control.label
-    local value_text = string.format(control.format, value)
-
-    -- Calculate x position for right-aligned value
-    local value_x = x_value_right_align - (#value_text * char_width)
-
-    if i == ConfigurationWindow.selected_control then
-      color = Config.colors.item
-      print("<", x_start -8, current_y, color)
-      print(label_text, x_start, current_y, color) -- Shift label due to '<'
-      print(value_text, value_x, current_y, color)
-      print(">", x_value_right_align + 4, current_y, color) -- Print '>' after value
-    else
-      print(label_text, x_start, current_y, color)
-      print(value_text, value_x, current_y, color)
+    
+    if control.type == "numeric_stepper" then
+      local value = control.get()
+      local label_text = control.label
+      local value_text = string.format(control.format, value)
+      
+      -- Calculate x position for right-aligned value
+      local value_x = x_value_right_align - (#value_text * char_width)
+      
+      if i == ConfigurationWindow.selected_control then
+        color = Config.colors.item
+        print("<", x_start -8, current_y, color)
+        print(label_text, x_start, current_y, color) -- Shift label due to '<'
+        print(value_text, value_x, current_y, color)
+        print(">", x_value_right_align + 4, current_y, color) -- Print '>' after value
+      else
+        print(label_text, x_start, current_y, color)
+        print(value_text, value_x, current_y, color)
+      end
+    elseif control.type == "action_item" then
+      local label_text = control.label
+      if i == ConfigurationWindow.selected_control then
+        color = Config.colors.item
+        print("<", x_start -8, current_y, color)
+        print(label_text, x_start, current_y, color)
+        print(">", x_start + 8 + (#label_text * char_width) + 4, current_y, color)
+      else
+        print(label_text, x_start, current_y, color)
+      end
     end
   end
   
@@ -56,13 +76,10 @@ end
 
 function ConfigurationWindow.update()
   if Input.menu_back() then
-    -- I need to find out how to switch back to the menu
-    -- For now, I'll assume a function GameWindow.set_state exists
     GameWindow.set_state(WINDOW_MENU)
     return
   end
 
-  -- Navigate between controls
   if Input.up() then
     ConfigurationWindow.selected_control = ConfigurationWindow.selected_control - 1
     if ConfigurationWindow.selected_control < 1 then
@@ -75,16 +92,21 @@ function ConfigurationWindow.update()
     end
   end
 
-  -- Modify control value
   local control = ConfigurationWindow.controls[ConfigurationWindow.selected_control]
   if control then
-    local current_value = control.get()
-    if Input.left() then
-      local new_value = math.max(control.min, current_value - control.step)
-      control.set(new_value)
-    elseif Input.right() then
-      local new_value = math.min(control.max, current_value + control.step)
-      control.set(new_value)
+    if control.type == "numeric_stepper" then
+      local current_value = control.get()
+      if btnp(2) then -- Left
+        local new_value = math.max(control.min, current_value - control.step)
+        control.set(new_value)
+      elseif btnp(3) then -- Right
+        local new_value = math.min(control.max, current_value + control.step)
+        control.set(new_value)
+      end
+    elseif control.type == "action_item" then
+      if Input.menu_confirm() then
+        control.action()
+      end
     end
   end
 end

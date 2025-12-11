@@ -14,15 +14,18 @@ function MenuWindow.update()
   end
 end
 
-function MenuWindow.play()
-  -- Reset player state and screen for a new game
-  Context.player.x = Config.player.start_x
-  Context.player.y = Config.player.start_y
-  Context.player.vx = 0
-  Context.player.vy = 0
-  Context.player.jumps = 0
-  Context.current_screen = 1
+function MenuWindow.new_game()
+  Context.new_game() -- This function will be created in Context
   GameWindow.set_state(WINDOW_GAME)
+end
+
+function MenuWindow.load_game()
+  Context.load_game() -- This function will be created in Context
+  GameWindow.set_state(WINDOW_GAME)
+end
+
+function MenuWindow.save_game()
+  Context.save_game() -- This function will be created in Context
 end
 
 function MenuWindow.exit()
@@ -34,9 +37,19 @@ function MenuWindow.configuration()
   GameWindow.set_state(WINDOW_CONFIGURATION)
 end
 
--- Initialize menu items after actions are defined
-Context.menu_items = {
-  {label = "Play", action = MenuWindow.play},
-  {label = "Configuration", action = MenuWindow.configuration},
-  {label = "Exit", action = MenuWindow.exit}
-}
+function MenuWindow.refresh_menu_items()
+  Context.menu_items = {
+    {label = "New Game", action = MenuWindow.new_game},
+    {label = "Load Game", action = MenuWindow.load_game},
+  }
+
+  if Context.game_in_progress then
+    table.insert(Context.menu_items, {label = "Save Game", action = MenuWindow.save_game})
+  end
+
+  table.insert(Context.menu_items, {label = "Configuration", action = MenuWindow.configuration})
+  table.insert(Context.menu_items, {label = "Exit", action = MenuWindow.exit})
+  Context.selected_menu_item = 1 -- Reset selection after refreshing
+end
+
+

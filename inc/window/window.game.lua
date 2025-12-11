@@ -26,6 +26,11 @@ function GameWindow.draw()
 end
 
 function GameWindow.update()
+  if Input.menu_back() then
+    Context.active_window = WINDOW_MENU
+    MenuWindow.refresh_menu_items()
+    return
+  end
   Player.update() -- Call the encapsulated player update logic
 end
 
