@@ -1,14 +1,11 @@
---------------------------------------------------------------------------------
--- Item Actions
---------------------------------------------------------------------------------
-function ItemActions.use()
+function Item.use()
   print("Used item: " .. Context.dialog.active_entity.name)
   GameWindow.set_state(WINDOW_INVENTORY)
 end
-function ItemActions.look_at()
+function Item.look_at()
   PopupWindow.show_description_dialog(Context.dialog.active_entity, Context.dialog.active_entity.desc)
 end
-function ItemActions.put_away()
+function Item.put_away()
   -- Add item to inventory
   table.insert(Context.inventory, Context.dialog.active_entity)
 
@@ -24,15 +21,15 @@ function ItemActions.put_away()
   -- Go back to game
   GameWindow.set_state(WINDOW_GAME)
 end
-function ItemActions.go_back_from_item_dialog()
+function Item.go_back_from_item_dialog()
   GameWindow.set_state(WINDOW_GAME)
 end
 
-function ItemActions.go_back_from_inventory_action()
+function Item.go_back_from_inventory_action()
 	GameWindow.set_state(WINDOW_GAME)
 end
 
-function ItemActions.drop()
+function Item.drop()
   -- Remove item from inventory
   for i, item in ipairs(Context.inventory) do
     if item == Context.dialog.active_entity then

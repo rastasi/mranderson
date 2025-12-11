@@ -1,6 +1,3 @@
---------------------------------------------------------------------------------
--- Splash Module
---------------------------------------------------------------------------------
 function SplashWindow.draw()
   print("Mr. Anderson's", 78, 60, Config.colors.green)
   print("Addventure", 90, 70, Config.colors.green)

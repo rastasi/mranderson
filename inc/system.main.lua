@@ -1,6 +1,3 @@
---------------------------------------------------------------------------------
--- Main Game Loop
---------------------------------------------------------------------------------
 local STATE_HANDLERS = {
   [WINDOW_SPLASH] = function()
     SplashWindow.update()
@@ -19,7 +16,7 @@ local STATE_HANDLERS = {
     GameWindow.draw()
   end,
   [WINDOW_POPUP] = function()
-    GameWindow.draw() -- Draw game behind dialog
+    GameWindow.draw()
     PopupWindow.update()
     PopupWindow.draw()
   end,
@@ -28,7 +25,7 @@ local STATE_HANDLERS = {
     InventoryWindow.draw()
   end,
   [WINDOW_INVENTORY_ACTION] = function()
-    InventoryWindow.draw() -- Draw inventory behind dialog
+    InventoryWindow.draw()
     PopupWindow.draw()
     PopupWindow.update()
   end,

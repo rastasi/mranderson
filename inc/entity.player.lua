@@ -65,9 +65,9 @@ function Player.update()
     for _, npc in ipairs(currentScreenData.npcs) do
       if math.abs(Context.player.x - npc.x) < Config.physics.interaction_radius_npc and math.abs(Context.player.y - npc.y) < Config.physics.interaction_radius_npc then
         PopupWindow.show_menu_dialog(npc, {
-          {label = "Talk to", action = NpcActions.talk_to},
-          {label = "Fight", action = NpcActions.fight},
-          {label = "Go back", action = NpcActions.go_back}
+          {label = "Talk to", action = NPC.talk_to},
+          {label = "Fight", action = NPC.fight},
+          {label = "Go back", action = NPC.go_back}
         }, WINDOW_POPUP)
         interaction_found = true
         break
@@ -79,10 +79,10 @@ function Player.update()
       for _, item in ipairs(currentScreenData.items) do
         if math.abs(Context.player.x - item.x) < Config.physics.interaction_radius_item and math.abs(Context.player.y - item.y) < Config.physics.interaction_radius_item then
           PopupWindow.show_menu_dialog(item, {
-            {label = "Use", action = ItemActions.use},
-            {label = "Look at", action = ItemActions.look_at},
-            {label = "Put away", action = ItemActions.put_away},
-            {label = "Go back", action = ItemActions.go_back_from_item_dialog}
+            {label = "Use", action = Item.use},
+            {label = "Look at", action = Item.look_at},
+            {label = "Put away", action = Item.put_away},
+            {label = "Go back", action = Item.go_back_from_item_dialog}
           }, WINDOW_POPUP)
           interaction_found = true
           break

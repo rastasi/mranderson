@@ -1,18 +1,12 @@
---------------------------------------------------------------------------------
--- Modules
---------------------------------------------------------------------------------
--- Window Modules (in WINDOW order)
 local SplashWindow = {}
 local IntroWindow = {}
 local MenuWindow = {}
 local GameWindow = {}
-local PopupWindow = {}    -- Manages popups for WINDOW_POPUP and WINDOW_INVENTORY_ACTION
-local InventoryWindow = {} -- Used for WINDOW_INVENTORY
+local PopupWindow = {}
+local InventoryWindow = {}
 
--- Other Modules
 local UI = {}
 local Input = {}
-local NpcActions = {}
-local ItemActions = {}
-local MenuActions = {}
+local NPC = {}
+local Item = {}
 local Player = {}

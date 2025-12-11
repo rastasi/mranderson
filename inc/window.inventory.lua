@@ -1,6 +1,3 @@
---------------------------------------------------------------------------------
--- Inventory Module
---------------------------------------------------------------------------------
 function InventoryWindow.draw()
   UI.draw_top_bar("Inventory")
 
@@ -24,10 +21,10 @@ function InventoryWindow.update()
   if Input.menu_confirm() and #Context.inventory > 0 then
     local selected_item = Context.inventory[Context.selected_inventory_item]
     PopupWindow.show_menu_dialog(selected_item, {
-      {label = "Use", action = ItemActions.use},
-      {label = "Drop", action = ItemActions.drop},
-      {label = "Look at", action = ItemActions.look_at},
-      {label = "Go back", action = ItemActions.go_back_from_inventory_action}
+      {label = "Use", action = Item.use},
+      {label = "Drop", action = Item.drop},
+      {label = "Look at", action = Item.look_at},
+      {label = "Go back", action = Item.go_back_from_inventory_action}
     }, WINDOW_INVENTORY_ACTION)
   end
 

@@ -28,7 +28,6 @@ $(OUTPUT): $(SRC) $(ORDER)
 	@echo "==> Building $(OUTPUT)..."
 	@rm -f $(OUTPUT)
 	@while read f; do \
-		echo "-- FILE: $$f" >> $(OUTPUT); \
 		cat "$(SRC_DIR)/$$f" >> $(OUTPUT); \
 		echo "\n" >> $(OUTPUT); \
 	done < $(ORDER)

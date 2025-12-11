@@ -1,6 +1,3 @@
---------------------------------------------------------------------------------
--- Input Module
---------------------------------------------------------------------------------
 function Input.up() return btnp(0) end
 function Input.down() return btnp(1) end
 function Input.left() return btn(2) end
