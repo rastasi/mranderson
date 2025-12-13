@@ -39,7 +39,7 @@ Based on the analysis of `mranderson.lua`, the following regularities and conven
 
 11. **`spr()` for Sprites:** Individual sprites should be rendered using the `spr()` function.
 12. **`map()` for Maps:** Tilemaps should be drawn using the `map()` function.
-13. **`print()` for Text:** Text display should utilize the `print()` function.
+13. **`Print.text()` for Text:** Text display should utilize the `Print.text()` function.
 
 ## Code Style
 

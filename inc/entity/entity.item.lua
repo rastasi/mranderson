@@ -1,5 +1,5 @@
 function Item.use()
-  print("Used item: " .. Context.dialog.active_entity.name)
+  Print.text("Used item: " .. Context.dialog.active_entity.name)
   GameWindow.set_state(WINDOW_INVENTORY)
 end
 function Item.look_at()

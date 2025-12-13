@@ -1,6 +1,6 @@
 function SplashWindow.draw()
-  print("Mr. Anderson's", 78, 60, Config.colors.green)
-  print("Addventure", 90, 70, Config.colors.green)
+  Print.text("Mr. Anderson's", 78, 60, Config.colors.green)
+  Print.text("Addventure", 90, 70, Config.colors.green)
 end
 
 function SplashWindow.update()

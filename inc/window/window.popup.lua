@@ -82,14 +82,14 @@ function PopupWindow.draw()
 
   -- Display the entity's name as the dialog title
   if Context.dialog.active_entity and Context.dialog.active_entity.name then
-    print(Context.dialog.active_entity.name, 120 - #Context.dialog.active_entity.name * 2, 45, Config.colors.green)
+    Print.text(Context.dialog.active_entity.name, 120 - #Context.dialog.active_entity.name * 2, 45, Config.colors.green)
   end
 
   -- Display the dialog content (description for "look at", or initial name/dialog for others)
   local wrapped_lines = UI.word_wrap(Context.dialog.text, 25) -- Max 25 chars per line
   local current_y = 55 -- Starting Y position for the first line of content
   for _, line in ipairs(wrapped_lines) do
-    print(line, 50, current_y, Config.colors.light_grey)
+    Print.text(line, 50, current_y, Config.colors.light_grey)
     current_y = current_y + 8 -- Move to the next line (8 pixels for default font height + padding)
   end
   
@@ -97,6 +97,6 @@ function PopupWindow.draw()
   if not Context.dialog.showing_description then
     UI.draw_menu(Context.dialog.menu_items, Context.dialog.selected_menu_item, 50, current_y + 2)
   else
-    print("[A] Go Back", 50, current_y + 10, Config.colors.green)
+    Print.text("[A] Go Back", 50, current_y + 10, Config.colors.green)
   end
 end

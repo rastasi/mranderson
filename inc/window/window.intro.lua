@@ -1,6 +1,6 @@
 function IntroWindow.draw() 
   local x = (Config.screen.width - 132) / 2 -- Centered text
-  print(Context.intro.text, x, Context.intro.y, Config.colors.green)
+  Print.text(Context.intro.text, x, Context.intro.y, Config.colors.green)
 end
 
 function IntroWindow.update() 

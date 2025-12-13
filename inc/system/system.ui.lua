@@ -1,6 +1,6 @@
 function UI.draw_top_bar(title)
   rect(0, 0, Config.screen.width, 10, Config.colors.dark_grey)
-  print(title, 3, 2, Config.colors.green)
+  Print.text(title, 3, 2, Config.colors.green)
 end
 
 function UI.draw_dialog()
@@ -11,9 +11,9 @@ function UI.draw_menu(items, selected_item, x, y)
   for i, item in ipairs(items) do
     local current_y = y + (i-1)*10
     if i == selected_item then
-      print(">", x - 8, current_y, Config.colors.green)
+      Print.text(">", x - 8, current_y, Config.colors.green)
     end
-    print(item.label, x, current_y, Config.colors.green)
+    Print.text(item.label, x, current_y, Config.colors.green)
   end
 end
 

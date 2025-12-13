@@ -7,6 +7,7 @@ local InventoryWindow = {}
 local ConfigurationWindow = {}
 
 local UI = {}
+local Print = {}
 local Input = {}
 local NPC = {}
 local Item = {}

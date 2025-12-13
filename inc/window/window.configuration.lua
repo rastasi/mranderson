@@ -50,28 +50,28 @@ function ConfigurationWindow.draw()
       
       if i == ConfigurationWindow.selected_control then
         color = Config.colors.item
-        print("<", x_start -8, current_y, color)
-        print(label_text, x_start, current_y, color) -- Shift label due to '<'
-        print(value_text, value_x, current_y, color)
-        print(">", x_value_right_align + 4, current_y, color) -- Print '>' after value
+        Print.text("<", x_start -8, current_y, color)
+        Print.text(label_text, x_start, current_y, color) -- Shift label due to '<'
+        Print.text(value_text, value_x, current_y, color)
+        Print.text(">", x_value_right_align + 4, current_y, color) -- Print '>' after value
       else
-        print(label_text, x_start, current_y, color)
-        print(value_text, value_x, current_y, color)
+        Print.text(label_text, x_start, current_y, color)
+        Print.text(value_text, value_x, current_y, color)
       end
     elseif control.type == "action_item" then
       local label_text = control.label
       if i == ConfigurationWindow.selected_control then
         color = Config.colors.item
-        print("<", x_start -8, current_y, color)
-        print(label_text, x_start, current_y, color)
-        print(">", x_start + 8 + (#label_text * char_width) + 4, current_y, color)
+        Print.text("<", x_start -8, current_y, color)
+        Print.text(label_text, x_start, current_y, color)
+        Print.text(">", x_start + 8 + (#label_text * char_width) + 4, current_y, color)
       else
-        print(label_text, x_start, current_y, color)
+        Print.text(label_text, x_start, current_y, color)
       end
     end
   end
   
-  print("Press B to go back", x_start, 120, Config.colors.light_grey)
+  Print.text("Press B to go back", x_start, 120, Config.colors.light_grey)
 end
 
 function ConfigurationWindow.update()
